@@ -179,6 +179,7 @@
               <button onclick="filtrarLeadsEnFrio()" class="nb-btn nb-btn-sm" style="background: rgba(239,68,68,0.2); color: #fca5a5; font-weight: bold;">⚠️ Leads en Frío</button>
               <button onclick="cargarAgenda()" class="nb-btn nb-btn-sm">Ver Todos</button>
               <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto</button>
+              <button onclick="abrirModalImportarLote()" id="btnImportarLote" class="nb-btn nb-btn-primary nb-btn-sm" style="background: #0f766e; display:none;">📥 Importación Masiva (Lote)</button>
             </div>
           </div>
           
@@ -285,6 +286,13 @@
               <option>-- Seleccionar --</option>
               <option>Movistar Fibra Optica</option>
               <option>Movistar Portabilidad</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">SEGMENTO *</label>
+            <select id="vSegmento" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>Individuos</option>
+              <option>Negocios</option>
             </select>
           </div>
           <div>
@@ -423,6 +431,37 @@
     </div>
   </div>
 
+  <!-- MODAL IMPORTACIÓN MASIVA (LOTE) -->
+  <div id="modalImportarLote" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: #000; width: 100%; max-width: 500px; border: 2px solid #333;">
+      <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
+        <span>○ IMPORTACIÓN MASIVA DE CONTACTOS</span>
+        <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 14px; width: 18px; height: 16px; line-height: 1;">×</button>
+      </div>
+      <div style="padding: 16px; background: #000; color: #c0c0c0; font-size: 11px;">
+        <div style="margin-bottom:10px;">
+          <label>Campaña por Defecto</label>
+          <select id="loteCamp" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;">
+            <option>Movistar Fibra Optica</option>
+            <option>Movistar Portabilidad</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>Asignar Todos al Vendedor:</label>
+          <select id="loteDestinoVendedor" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></select>
+        </div>
+        <div style="margin-bottom:6px;">
+          <label>Pega tus contactos (Un contacto por línea con formato: <code style="color:#60a5fa;">DNI, Nombre, Dirección, Teléfono</code>)</label>
+          <textarea id="loteTextoRaw" placeholder="30123456, Juan Pérez, Av. Corrientes 1234, 1122334455&#10;35987654, María Gómez, Santa Fe 500, 1199887766" style="width:100%; padding:6px; background:#222; color:#fff; border:1px solid #555; height: 140px; font-family: monospace; font-size: 11px;"></textarea>
+        </div>
+      </div>
+      <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
+        <button onclick="cerrarModales()" style="padding: 4px 15px; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
+        <button onclick="procesarImportacionLote()" style="padding: 4px 15px; background: #10b981; color: #fff; font-size: 11px; cursor: pointer; font-weight: bold;">Procesar Importación</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DETALLE DE AGENDA / SEGUIMIENTO -->
   <div id="modalDetalleAgenda" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div id="contenidoDetalleAgenda" style="width: 100%; max-width: 600px; margin: 20px;"></div>
@@ -507,6 +546,8 @@
       setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         document.getElementById('linkUsuarios').style.display = 'flex';
+        const btnImp = document.getElementById('btnImportarLote');
+        if(btnImp) btnImp.style.display = 'inline-block';
       }
       cargarVentas();
       cargarAgenda();
@@ -541,7 +582,7 @@
     }
 
     function cerrarModales() {
-      ['modalVenta', 'modalUsuario', 'modalDetalleVenta', 'modalAgenda', 'modalDetalleAgenda'].forEach(id => {
+      ['modalVenta', 'modalUsuario', 'modalDetalleVenta', 'modalAgenda', 'modalDetalleAgenda', 'modalImportarLote'].forEach(id => {
         const m = document.getElementById(id);
         if(m) m.style.display = 'none';
       });
@@ -575,6 +616,7 @@
       });
       document.getElementById('alertaDuplicado').style.display = 'none';
       document.getElementById('vCampaña').selectedIndex = 0;
+      document.getElementById('vSegmento').selectedIndex = 0;
       document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
       document.getElementById('vProv').selectedIndex = 0;
       document.getElementById('vMetodoPago').selectedIndex = 0;
@@ -599,6 +641,10 @@
           if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
             loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
           }
+          const loteImportSel = document.getElementById('loteDestinoVendedor');
+          if(loteImportSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
+            loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+          }
         }
       } catch(e) {}
     }
@@ -616,10 +662,10 @@
     }
 
     function actualizarKPIsPersonales() {
-      const misVentas = todasLasVentas.filter(r => safeLower(r[5]) === safeLower(usuarioActual.nombre) || safeLower(r[5]) === safeLower(usuarioActual.email));
+      const misVentas = todasLasVentas.filter(r => safeLower(r[6]) === safeLower(usuarioActual.nombre) || safeLower(r[6]) === safeLower(usuarioActual.email));
       const total = misVentas.length;
-      const instaladas = misVentas.filter(r => (r[7] || '').toUpperCase() === 'CUMPLIDA').length;
-      const pendientes = misVentas.filter(r => (r[7] || '').toUpperCase() === 'PENDIENTE').length;
+      const instaladas = misVentas.filter(r => (r[8] || '').toUpperCase() === 'CUMPLIDA').length;
+      const pendientes = misVentas.filter(r => (r[8] || '').toUpperCase() === 'PENDIENTE').length;
       const efectividad = total > 0 ? ((instaladas / total) * 100).toFixed(1) + '%' : '0%';
 
       setText('kpiTotal', total);
@@ -632,10 +678,10 @@
       const dni = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
       const alerta = document.getElementById('alertaDuplicado');
       if(!dni) { if(alerta) alerta.style.display = 'none'; return; }
-      const duplicado = todasLasVentas.find(r => r[2].toString().trim() === dni);
+      const duplicado = todasLasVentas.find(r => r[3].toString().trim() === dni);
       if(duplicado && alerta) {
         alerta.style.display = 'block';
-        alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[5]} (${duplicado[7] || 'PENDIENTE'}).`;
+        alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[6]} (${duplicado[8] || 'PENDIENTE'}).`;
       } else if(alerta) { alerta.style.display = 'none'; }
     }
 
@@ -649,8 +695,8 @@
         const textoFila = safeLower(r.join(' '));
         if(libre && !textoFila.includes(libre)) return false;
         if(camp && r[1] !== camp) return false;
-        if(resp && !safeLower(r[5]).includes(resp)) return false;
-        if(estado && (r[7] || 'PENDIENTE') !== estado) return false;
+        if(resp && !safeLower(r[6]).includes(resp)) return false;
+        if(estado && (r[8] || 'PENDIENTE') !== estado) return false;
         return true;
       });
 
@@ -666,19 +712,19 @@
         return;
       }
       tbody.innerHTML = data.map((r, idx) => {
-        let est = r[7] || "PENDIENTE";
+        let est = r[8] || "PENDIENTE";
         let bClass = "nb-badge-blue";
         if(est === 'CUMPLIDA') bClass = "nb-badge-green";
         else if(est.includes('CANCELADA') || est.includes('RECUPERAR')) bClass = "nb-badge-red";
         else if(est === 'PENDIENTE') bClass = "nb-badge-yellow";
         
-        let adjHTML = (r[10] && r[10].toString().includes("http")) ? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
-        let nroOrdenVal = r[21] || '-';
+        let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${r[11]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        let nroOrdenVal = r[22] || '-';
 
         return `<tr onclick="verDetalleVenta(${idx})">
-          <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td><strong>${nroOrdenVal}</strong></td>
-          <td>${r[2] || ''}</td><td>${r[3] || ''} ${r[4] || ''}</td><td>${r[5] || ''}</td>
-          <td>${r[6] || ''}</td><td><span class="nb-badge ${bClass}">${est}</span></td><td>${adjHTML}</td>
+          <td>${r[0] || ''}</td><td>${r[1] || ''} (${r[2] || 'Individuos'})</td><td><strong>${nroOrdenVal}</strong></td>
+          <td>${r[3] || ''}</td><td>${r[4] || ''} ${r[5] || ''}</td><td>${r[6] || ''}</td>
+          <td>${r[7] || ''}</td><td><span class="nb-badge ${bClass}">${est}</span></td><td>${adjHTML}</td>
         </tr>`;
       }).join('');
     }
@@ -686,18 +732,18 @@
     function buscarClienteDNI() {
       const dni = document.getElementById('vBuscarDNI').value.trim();
       if(!dni) return;
-      const encontrada = todasLasVentas.find(r => r[2].toString().trim() === dni);
+      const encontrada = todasLasVentas.find(r => r[3].toString().trim() === dni);
       if(encontrada) {
-        document.getElementById('vDoc').value = encontrada[2] || '';
-        document.getElementById('vNombre').value = encontrada[3] || '';
-        document.getElementById('vApellido').value = encontrada[4] || '';
-        document.getElementById('vNac').value = encontrada[11] || '';
-        document.getElementById('vTel1').value = encontrada[12] || '';
-        document.getElementById('vTel2').value = encontrada[13] || '';
-        document.getElementById('vTelTot').value = encontrada[14] || '';
-        document.getElementById('vMail').value = encontrada[15] || '';
-        document.getElementById('vProv').value = encontrada[16] || '';
-        document.getElementById('vLoc').value = encontrada[17] || '';
+        document.getElementById('vDoc').value = encontrada[3] || '';
+        document.getElementById('vNombre').value = encontrada[4] || '';
+        document.getElementById('vApellido').value = encontrada[5] || '';
+        document.getElementById('vNac').value = encontrada[12] || '';
+        document.getElementById('vTel1').value = encontrada[13] || '';
+        document.getElementById('vTel2').value = encontrada[14] || '';
+        document.getElementById('vTelTot').value = encontrada[15] || '';
+        document.getElementById('vMail').value = encontrada[16] || '';
+        document.getElementById('vProv').value = encontrada[17] || '';
+        document.getElementById('vLoc').value = encontrada[18] || '';
         showToast('¡Datos autocompletados!', 'info');
       } else { document.getElementById('vDoc').value = dni; }
       verificarDuplicadoDNI();
@@ -706,15 +752,15 @@
     function descargarExcel(tipo) {
       let datosParaExportar = todasLasVentas;
       if(tipo === 'mias') {
-        datosParaExportar = todasLasVentas.filter(r => safeLower(r[5]) === safeLower(usuarioActual.nombre) || safeLower(r[5]) === safeLower(usuarioActual.email));
+        datosParaExportar = todasLasVentas.filter(r => safeLower(r[6]) === safeLower(usuarioActual.nombre) || safeLower(r[6]) === safeLower(usuarioActual.email));
       }
       if(!datosParaExportar || datosParaExportar.length === 0) {
         showToast('No hay ventas para descargar', 'error'); return;
       }
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Fecha,Campaña,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
+      csvContent += "Fecha,Campaña,Segmento,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
       datosParaExportar.forEach(r => {
-        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[21] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
+        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[22] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
         csvContent += fila + "\r\n";
       });
       const encodedUri = encodeURI(csvContent);
@@ -726,16 +772,16 @@
 
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
-      let est = r[7] || "PENDIENTE";
-      let nroOrdenActual = r[21] || '';
-      let vendedorActual = r[5] || '';
+      let est = r[8] || "PENDIENTE";
+      let nroOrdenActual = r[22] || '';
+      let vendedorActual = r[6] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
-            <span>○ Detalle Venta — ${r[3]} ${r[4]} (DNI: ${r[2]})</span>
+            <span>○ Detalle Venta — ${r[4]} ${r[5]} (DNI: ${r[3]})</span>
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
@@ -753,27 +799,27 @@
               <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <span style="font-size: 11px; font-weight: bold;">VENDEDOR:</span>
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
-              <button onclick="guardarCambiosVentaAdminTL('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
+              <button onclick="guardarCambiosVentaAdminTL('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
-              <button onclick="actualizarEstadoSolo('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+              <button onclick="actualizarEstadoSolo('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
 
           <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>PRODUCTO:</b> ${r[6] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[2] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[3] || ''} ${r[4] || ''}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[5] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[12] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CAMPAÑA:</b> ${r[1] || '-'} (${r[2] || 'Individuos'})</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>PRODUCTO:</b> ${r[7] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[3] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[4] || ''} ${r[5] || ''}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[6] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[13] || '-'}</div>
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
               <b>HISTORIAL Y OBSERVACIONES:</b>
               <textarea id="detalleObs" style="width: 100%; height: 50px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;" placeholder="Escribe tu observación..."></textarea>
-              <button onclick="actualizarObs('${r[2]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>
-              <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${r[19] || 'Sin notas'}</pre>
+              <button onclick="actualizarObs('${r[3]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>
+              <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${r[20] || 'Sin notas'}</pre>
             </div>
           </div>
           <div style="padding: 8px 12px; display: flex; justify-content: flex-end; background: #d4d0c8; border-top: 1px solid #fff;">
@@ -833,6 +879,7 @@
 
       const d = {
         campana: document.getElementById('vCampaña').value,
+        segmento: document.getElementById('vSegmento').value,
         producto: document.getElementById('vProducto').value,
         documento: doc, nacimiento: document.getElementById('vNac').value,
         nombre: nombre, apellido: apellido,
@@ -877,6 +924,7 @@
       });
       document.getElementById('alertaDuplicado').style.display = 'none';
       document.getElementById('vCampaña').selectedIndex = 0;
+      document.getElementById('vSegmento').selectedIndex = 0;
       document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
       document.getElementById('vProv').selectedIndex = 0;
       document.getElementById('vMetodoPago').selectedIndex = 0;
@@ -884,7 +932,7 @@
       document.getElementById('vTipoLineaContainer').style.display = 'none';
     }
 
-    // GESTIÓN DE AGENDA, LLAMADOS Y LEADS EN FRÍO (>48H)
+    // GESTIÓN DE AGENDA, LEADS EN FRÍO E IMPORTACIÓN MASIVA
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
@@ -999,6 +1047,39 @@
           cargarAgenda();
         } else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error en asignación masiva', 'error'); }
+    }
+
+    function abrirModalImportarLote() {
+      document.getElementById('loteTextoRaw').value = '';
+      document.getElementById('modalImportarLote').style.display = 'flex';
+    }
+
+    async function procesarImportacionLote() {
+      const camp = document.getElementById('loteCamp').value;
+      const vendedorDestino = document.getElementById('loteDestinoVendedor').value;
+      const rawText = document.getElementById('loteTextoRaw').value.trim();
+
+      if(!rawText || !vendedorDestino) {
+        showToast('Completá el texto con los contactos y seleccioná un vendedor', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'importarLoteAgendaGS', userEmail: usuarioActual.email, campana: camp, vendedorDestino: vendedorDestino, rawText: rawText })
+        });
+        const data = await res.json();
+        if(data.success) {
+          showToast(data.msg);
+          cerrarModales();
+          cargarAgenda();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error al procesar lote: ' + e.message, 'error');
+      }
     }
 
     function abrirModalAgenda() {
