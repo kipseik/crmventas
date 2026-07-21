@@ -355,7 +355,7 @@
 
         <!-- 3 BOTONES DE ADJUNTO -->
         <div style="margin-top: 10px; padding: 8px; border: 1px solid #444; background: #0a0a0a; display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTOS (DNI / SERVICIOS)</label>
+          <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTOS (DNI / SERVICIOS - MÁX 3 ARCHIVOS)</label>
           <input type="file" id="vArchivo1" style="font-size: 11px; color: #c0c0c0;">
           <input type="file" id="vArchivo2" style="font-size: 11px; color: #c0c0c0;">
           <input type="file" id="vArchivo3" style="font-size: 11px; color: #c0c0c0;">
@@ -406,11 +406,15 @@
     let todasLasVentas = [];
     let usuarioActual = null;
 
-    // Productos de Fibra ampliados con TV MAX
+    // Productos de Fibra con TV DIG (Digital)
     const PRODUCTOS_FIBRA = [
       '300 Megas', '600 Megas', '1000 Megas',
-      '300mb + tv MAX .. sin deco', '600mb + tv MAX .. sin deco', 'GIGA + tv MAX .. sin deco',
-      '300mb + tv MAX + 1 DECO', '600mb +  tv MAX + 1 DECO', 'GIGA +  tv MAX + 1 DECO'
+      '300mb + tv DIG .. sin deco',
+      '600mb + tv DIG .. sin deco',
+      'GIGA + tv DIG .. sin deco',
+      '300mb + tv DIG + 1 DECO',
+      '600mb +  tv DIG + 1 DECO',
+      'GIGA +  tv DIG  + 1 DECO'
     ];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
@@ -539,29 +543,18 @@
       } catch(err) { showError(err.message); }
     }
 
-    // --- FILTROS AVANZADOS ESTILO CLÁSICO ---
     function aplicarFiltrosAvanzados() {
       const libre = safeLower(document.getElementById('filtroLibre').value);
       const camp = document.getElementById('filtroCamp').value;
       const resp = safeLower(document.getElementById('filtroResp').value);
       const estado = document.getElementById('filtroEstado').value;
-      const fDesde = document.getElementById('filtroFechaDesde').value;
-      const fHasta = document.getElementById('filtroFechaHasta').value;
 
       const filtradas = todasLasVentas.filter(r => {
-        // r[0]=Fecha, r[1]=Campaña, r[2]=Nro Orden (o doc segun mapeo), r[3]=Doc, r[4]=Nombre, r[5]=Apellido, r[6]=Vendedor, r[7]=Producto, r[8]=Estado, r[9]=NroOrden/Pedido adicional, etc.
-        // Asegurémonos de buscar en libre por doc, nombre, apellido, nro orden
         const textoFila = safeLower(r.join(' '));
         if(libre && !textoFila.includes(libre)) return false;
         if(camp && r[1] !== camp) return false;
         if(resp && !safeLower(r[5]).includes(resp) && !safeLower(r[6]).includes(resp)) return false;
         if(estado && (r[7] || 'PENDIENTE') !== estado) return false;
-        
-        // Filtro por fecha si aplica (asumiendo formato DD/MM/YYYY o ISO en r[0])
-        if(fDesde || fHasta) {
-          // Parse básico de fecha de venta si está en r[0]
-          // Si r[0] es dd/mm/yyyy
-        }
         return true;
       });
 
@@ -583,7 +576,7 @@
         else if(est === 'PENDIENTE') bClass = "nb-badge-yellow";
         
         let adjHTML = (r[10] && r[10].toString().includes("http")) ? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
-        let nroOrdenVal = r[21] || '-'; // Suponiendo columna de Nro de Orden
+        let nroOrdenVal = r[21] || '-';
 
         return `<tr onclick="verDetalleVenta(${idx})">
           <td>${r[0] || ''}</td>
@@ -621,25 +614,21 @@
       }
     }
 
-    // --- DESCARGA EXCEL (MÍAS VS GRUPO) ---
     function descargarExcel(tipo) {
       let datosParaExportar = todasLasVentas;
       if(tipo === 'mias') {
         datosParaExportar = todasLasVentas.filter(r => safeLower(r[5]) === safeLower(usuarioActual.nombre) || safeLower(r[5]) === safeLower(usuarioActual.email));
       }
-
       if(!datosParaExportar || datosParaExportar.length === 0) {
         showToast('No hay ventas para descargar con ese filtro', 'error');
         return;
       }
-
       let csvContent = "data:text/csv;charset=utf-8,";
       csvContent += "Fecha,Campaña,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
       datosParaExportar.forEach(r => {
         let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[21] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
         csvContent += fila + "\r\n";
       });
-
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -649,7 +638,6 @@
       document.body.removeChild(link);
     }
 
-    // --- MODAL DETALLE VENTA CON CAMPO DE NRO DE ORDEN PARA ADMIN / TL ---
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
       let est = r[7] || "PENDIENTE";
@@ -770,7 +758,6 @@
         tipoLinea: document.getElementById('vCampaña').value === 'Movistar Portabilidad'? document.getElementById('vTipoLinea').value : null
       };
 
-      // Recopilar hasta 3 archivos si existen
       const files = [document.getElementById('vArchivo1').files[0], document.getElementById('vArchivo2').files[0], document.getElementById('vArchivo3').files[0]].filter(Boolean);
 
       const enviar = async (datos) => {
