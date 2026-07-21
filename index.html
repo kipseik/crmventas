@@ -174,8 +174,9 @@
         <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
             <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 AGENDA Y LLAMADOS DE SEGUIMIENTO</div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button onclick="filtrarLlamadosHoy()" id="btnFiltroHoy" class="nb-btn nb-btn-sm" style="background: #f59e0b; color: #000; font-weight: bold;">🔔 Llamados de Hoy</button>
+              <button onclick="filtrarLeadsEnFrio()" class="nb-btn nb-btn-sm" style="background: rgba(239,68,68,0.2); color: #fca5a5; font-weight: bold;">⚠️ Leads en Frío</button>
               <button onclick="cargarAgenda()" class="nb-btn nb-btn-sm">Ver Todos</button>
               <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto</button>
             </div>
@@ -594,7 +595,6 @@
           teamLeadersGlobal = data.teamLeaders || [];
           todosLosVendedoresGlobal = data.allUsers || [];
           
-          // Poblar selector masivo de la agenda si es Admin/TL
           const loteSel = document.getElementById('loteNuevoVendedor');
           if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
             loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
@@ -884,7 +884,7 @@
       document.getElementById('vTipoLineaContainer').style.display = 'none';
     }
 
-    // AGENDA Y LEADS CON RECORDATORIOS Y ASIGNACIÓN MASIVA
+    // GESTIÓN DE AGENDA, LLAMADOS Y LEADS EN FRÍO (>48H)
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
@@ -894,6 +894,21 @@
           renderAgenda(agendaGlobal);
         }
       } catch(e) {}
+    }
+
+    function esLeadEnFrio(fechaStr, estado) {
+      if (estado === 'VENDIDO' || estado === 'DESCARTADO') return false;
+      if (!fechaStr) return false;
+      try {
+        const parts = fechaStr.toString().split(' ');
+        const dateParts = parts[0].split('/');
+        const timeParts = parts[1] ? parts[1].split(':') : [0,0];
+        const d = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1]);
+        const horasTranscurridas = (new Date() - d) / (1000 * 60 * 60);
+        return horasTranscurridas > 48;
+      } catch(e) {
+        return false;
+      }
     }
 
     function renderAgenda(data) {
@@ -910,13 +925,17 @@
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : 'nb-badge-yellow');
         let fechaRec = r[10] ? r[10].replace('T', ' ') : '-';
         let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
+        
+        let enFrio = esLeadEnFrio(r[0], est);
+        let rowStyle = enFrio ? 'background: rgba(239, 68, 68, 0.12); border-left: 3px solid var(--accent);' : '';
+        let frioBadge = enFrio ? `<br><span style="font-size:9px; color:#ef4444; font-weight:bold;">⚠️ EN FRÍO (>48h)</span>` : '';
 
-        return `<tr>
+        return `<tr style="${rowStyle}">
           <td>${checkHTML}</td>
           <td>${r[0] || ''}</td>
           <td style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
           <td>${r[2] || ''}</td>
-          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">${r[5] || ''}</span></td>
+          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">${r[5] || ''}</span>${frioBadge}</td>
           <td>${r[7] || ''}</td>
           <td><strong>${r[6] || ''}</strong></td>
           <td><span class="nb-badge ${bClass}">${est}</span></td>
@@ -928,7 +947,7 @@
     }
 
     function filtrarLlamadosHoy() {
-      const hoyStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const hoyStr = new Date().toISOString().slice(0, 10);
       const filtrados = agendaGlobal.filter(r => {
         let rec = r[10] ? r[10].toString() : '';
         let est = r[9] || 'NUEVO';
@@ -936,6 +955,12 @@
       });
       renderAgenda(filtrados);
       showToast(`Mostrando ${filtrados.length} llamados programados para hoy`, 'info');
+    }
+
+    function filtrarLeadsEnFrio() {
+      const filtrados = agendaGlobal.filter(r => esLeadEnFrio(r[0], r[9]));
+      renderAgenda(filtrados);
+      showToast(`Mostrando ${filtrados.length} leads en frío (>48h sin gestión)`, 'error');
     }
 
     function toggleSeleccionarTodos(source) {
