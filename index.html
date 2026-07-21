@@ -244,18 +244,24 @@
         </div>
       </div>
 
-      <!-- SECCIÓN CONFIGURACIÓN CAMPAÑAS Y PRODUCTOS (ADMIN) -->
+      <!-- SECCIÓN CONFIGURACIÓN CAMPAÑAS, PRODUCTOS Y AGENTE (ADMIN) -->
       <div id="sec-config" class="page-section" style="display: none;">
         <div class="nb-window" style="background: #1e1e1e; padding: 16px; margin-bottom: 16px;">
-          <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">⚙️ GESTIÓN DE CAMPAÑAS Y PRODUCTOS</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 150px; gap: 10px; align-items: end; font-size: 11px; margin-bottom: 15px;">
+          <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">⚙️ GESTIÓN DE CAMPAÑAS, PRODUCTOS Y AGENTES</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 150px; gap: 10px; align-items: end; font-size: 11px; margin-bottom: 15px;">
             <div>
               <label style="display:block; margin-bottom:4px;">Nombre de Campaña</label>
               <input type="text" id="cfgCampana" placeholder="Ej: Movistar Negocios" class="nb-input">
             </div>
             <div>
               <label style="display:block; margin-bottom:4px;">Nombre de Producto</label>
-              <input type="text" id="cfgProducto" placeholder="Ej: 500 Megas Simétrico" class="nb-input">
+              <input type="text" id="cfgProducto" placeholder="Ej: 500 Megas" class="nb-input">
+            </div>
+            <div>
+              <label style="display:block; margin-bottom:4px;">Agente Asignado</label>
+              <select id="cfgAgente" class="nb-select">
+                <option value="Todos">Todos (General)</option>
+              </select>
             </div>
             <div>
               <button onclick="agregarCampanaProducto()" class="nb-btn nb-btn-primary" style="width:100%; font-weight:bold;">+ Agregar</button>
@@ -263,8 +269,8 @@
           </div>
           <div style="overflow-x: auto;">
             <table class="nb-table">
-              <thead><tr><th>Campaña</th><th>Producto Asociado</th><th>Acciones</th></tr></thead>
-              <tbody id="tablaConfigCampanas"><tr><td colspan="3"><div class="loader"></div></td></tr></tbody>
+              <thead><tr><th>Campaña</th><th>Producto Asociado</th><th>Agente Asignado</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaConfigCampanas"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -663,7 +669,10 @@
 
     async function cargarConfigCampanas() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getConfigCampanas'}) });
+        const res = await fetch(GAS_URL, { 
+          method: 'POST', 
+          body: JSON.stringify({ action: 'getConfigCampanas', userEmail: usuarioActual ? usuarioActual.email : '' }) 
+        });
         const data = await res.json();
         if(data.success) {
           configuracionCampanasGlobal = data.campanasMap || {};
@@ -717,13 +726,15 @@
         if(data.success) {
           let rowsHTML = '';
           data.rawRows.forEach(r => {
+            let agenteAsig = r[2] || 'Todos';
             rowsHTML += `<tr>
               <td><strong>${r[0]}</strong></td>
               <td>${r[1]}</td>
-              <td><button onclick="eliminarCampanaProducto('${r[0]}', '${r[1]}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
+              <td><span class="nb-badge nb-badge-blue">${agenteAsig}</span></td>
+              <td><button onclick="eliminarCampanaProducto('${r[0]}', '${r[1]}', '${agenteAsig}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
             </tr>`;
           });
-          tbody.innerHTML = rowsHTML || "<tr><td colspan='3' style='text-align:center;'>Sin campañas configuradas</td></tr>";
+          tbody.innerHTML = rowsHTML || "<tr><td colspan='4' style='text-align:center;'>Sin campañas configuradas</td></tr>";
         }
       } catch(e) {}
     }
@@ -731,12 +742,13 @@
     async function agregarCampanaProducto() {
       const camp = document.getElementById('cfgCampana').value.trim();
       const prod = document.getElementById('cfgProducto').value.trim();
+      const agente = document.getElementById('cfgAgente').value;
       if(!camp || !prod) { showToast('Completá campaña y producto', 'error'); return; }
 
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod}, adminEmail: usuarioActual.email })
+          body: JSON.stringify({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod, agente: agente}, adminEmail: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
@@ -749,12 +761,12 @@
       } catch(e) { showToast('Error al guardar', 'error'); }
     }
 
-    async function eliminarCampanaProducto(camp, prod) {
-      if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}"?`)) return;
+    async function eliminarCampanaProducto(camp, prod, agente) {
+      if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}" (${agente})?`)) return;
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'eliminarConfigCampana', campana: camp, producto: prod, adminEmail: usuarioActual.email })
+          body: JSON.stringify({ action: 'eliminarConfigCampana', campana: camp, producto: prod, agente: agente, adminEmail: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
@@ -803,6 +815,10 @@
           const loteImportSel = document.getElementById('loteDestinoVendedor');
           if(loteImportSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
             loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+          }
+          const cfgAgenteSel = document.getElementById('cfgAgente');
+          if(cfgAgenteSel) {
+            cfgAgenteSel.innerHTML = '<option value="Todos">Todos (General)</option>' + todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
           }
         }
       } catch(e) {}
@@ -1439,7 +1455,6 @@
             </select>
           </div>
 
-          <!-- CONTENEDOR MOTIVO DE DESCARTE Y COORDENADAS OBLIGATORIAS -->
           <div id="containerMotivoDescarte" style="margin-bottom: 10px; display: ${estadoActual==='DESCARTADO'?'block':'none'}; background: rgba(239,68,68,0.1); padding: 8px; border: 1px solid var(--accent);">
             <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight:bold;">MOTIVO DE DESCARTE *</label>
             <select id="agMotivoDescarte" onchange="toggleCoordenadasObligatorias()" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555; margin-bottom: 8px;">
