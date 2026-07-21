@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PACES CRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #121212; --surface: #1e1e1e; --surface-2: #2d2d2d;
+      --ink: #f5f0e8; --ink-soft: rgba(245, 240, 232, 0.6);
+      --primary: #3b82f6; --accent: #ef4444; --border: 1px solid #333;
+      --border-bold: 2px solid #444;
+      --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+      --blue-header: #1e40af; --teal-bg: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--ink); }
+
+    /* LOGIN */
+    .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
+    .login-box { background: #1a1a1a; border: 2px solid #333; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(59,130,246,0.3); }
+    .login-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--primary); margin-bottom: 30px; letter-spacing: 2px; }
+    .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #555; background: #2a2a2a; color: #ffffff; font-size: 13px; }
+    .login-input:focus { outline: none; border-color: var(--primary); background: #333; }
+    .login-input::placeholder { color: #888; }
+    .login-btn { width: 100%; padding: 12px; background: var(--primary); border: none; color: white; font-weight: 700; cursor: pointer; font-size: 14px; }
+    .login-btn:hover { opacity: 0.9; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-error { color: var(--accent); font-size: 11px; text-align: center; margin-top: 10px; min-height: 16px; }
+
+    /* APP */
+    .nb-topbar { display: flex; align-items: center; padding: 0 20px; height: 50px; background: var(--surface); border-bottom: var(--border); position: sticky; top:0; z-index:100; }
+    .nb-brand { font-weight: 900; font-size: 18px; color: var(--primary); letter-spacing: 1px; margin-right: 30px; }
+    .nb-nav-links { display: flex; gap: 4px; height: 100%; }
+    .nb-nav-link { color: var(--ink-soft); text-decoration: none; font-size: 13px; font-weight: 500; padding: 0 16px; display: flex; align-items: center; border-bottom: 2px solid transparent; cursor: pointer; }
+    .nb-nav-link:hover { color: var(--ink); background: rgba(255,255,255,0.05); }
+    .nb-nav-link.active { color: var(--ink); border-bottom-color: var(--primary); }
+
+    .nb-page { padding: 20px; max-width: 1600px; margin: 0 auto; padding-bottom: 60px; }
+    .nb-window { background: var(--surface); border: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .nb-titlebar { background: var(--surface-2); padding: 8px 12px; font-size: 12px; font-weight: 600; border-bottom: var(--border); display: flex; align-items: center; gap: 8px; color: var(--ink); }
+    .nb-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .nb-dot.green { background: #10b981; }.nb-dot.yellow { background: #f59e0b; }.nb-dot.red { background: #ef4444; }
+    .nb-content { padding: 16px; }
+
+    .nb-input,.nb-select,.nb-textarea { background: #2a2a2a !important; border: 1px solid #555 !important; color: #ffffff !important; padding: 8px; border-radius: 4px; font-size: 12px; width: 100%; font-family: inherit; }
+    .nb-input:focus,.nb-select:focus,.nb-textarea:focus { outline: none; border-color: var(--primary) !important; background: #333 !important; }
+    .nb-input::placeholder,.nb-textarea::placeholder { color: #888; }
+    .nb-select option { background: #2a2a2a; color: #fff; }
+    .nb-textarea { resize: vertical; }
+
+    .nb-btn { background: var(--surface-2); border: var(--border); color: var(--ink); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .nb-btn:hover { opacity: 0.9; }
+    .nb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .nb-btn-primary { background: var(--primary); border: none; color: white; }
+    .nb-btn-accent { background: var(--accent); border: none; color: white; }
+    .nb-btn-sm { padding: 4px 8px; font-size: 11px; }
+
+    .nb-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .nb-table th { padding: 10px 12px; font-size: 11px; color: var(--ink-soft); border-bottom: var(--border); background: var(--surface-2); text-transform: uppercase; position: sticky; top: 50px; }
+    .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); }
+    .nb-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+
+    .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+    .nb-badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .nb-badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .nb-badge-red { background: rgba(239, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .nb-badge-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
+
+    .nb-grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .nb-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .nb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .nb-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+
+    .report-box { background: white; border: 1px solid #333; border-radius: 4px; padding: 12px; text-align: center; }
+    .report-box-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+    .report-box-value { font-size: 32px; font-weight: 900; color: #1e40af; }
+    .report-box-sub { font-size: 11px; color: #999; }
+
+    .report-header { background: var(--blue-header); color: white; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .report-section { background: var(--teal-bg); padding: 16px; border-radius: 6px; margin-bottom: 16px; }
+
+    .loader { border: 3px solid var(--surface-2); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .toast { position: fixed; top: 70px; right: 20px; background: var(--surface-2); padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--primary); z-index: 9999; animation: slideIn 0.3s; max-width: 400px; }
+    @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
+    .error-box { background: rgba(239, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
+
+    /* MODAL DETALLE */
+    .nb-modal { background: var(--surface); border: 2px solid #333; }
+    .nb-modal-body { padding: 12px; background: var(--surface); }
+    .nb-inset { background: var(--surface-2); border: var(--border); border-radius: 4px; }
+    .nb-field { margin-bottom: 12px; }
+    .nb-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 4px; display: block; }
+    .nb-modal-footer { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); border-top: var(--border); }
+    .nb-table-wrap { overflow-x: auto; }
+
+    @media(max-width:768px){.nb-table { font-size: 10px; }.nb-nav-links { overflow-x: auto; } }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="login-wrapper">
+    <div class="login-box">
+      <div class="login-title">PACES CRM</div>
+      <input type="email" id="loginEmail" class="login-input" placeholder="Email" autocomplete="username">
+      <input type="password" id="loginPass" class="login-input" placeholder="Contraseña" autocomplete="current-password" onkeypress="if(event.key==='Enter') hacerLogin()">
+      <button onclick="hacerLogin()" id="btnLogin" class="login-btn">INGRESAR</button>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <!-- APP PRINCIPAL -->
+  <div id="appScreen" style="display:none;">
+    <nav class="nb-topbar">
+      <span class="nb-brand">PACES</span>
+      <div class="nb-nav-links">
+        <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
+        <a class="nb-nav-link" onclick="navTo('sec-reportes', this)">📊 Reportes</a>
+        <a class="nb-nav-link" onclick="navTo('sec-usuarios', this)" id="linkUsuarios" style="display:none">Usuarios</a>
+      </div>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
+        <span id="userInfo" style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-soft);"></span>
+        <button onclick="cerrarSesion()" class="nb-btn nb-btn-sm" style="background: var(--accent);">Salir</button>
+      </div>
+    </nav>
+
+    <div class="nb-page">
+      <div id="errorGlobal" style="display:none;"></div>
+
+      <!-- SECCIÓN: VENTAS -->
+      <div id="sec-ventas" class="page-section">
+        <div class="nb-window">
+          <div class="nb-titlebar"><span class="nb-dot green"></span>Búsqueda de Ventas</div>
+          <div class="nb-content">
+            <input type="text" id="buscarVenta" class="nb-input" placeholder="🔍 Buscar por documento, nombre, apellido..." onkeyup="debounceFiltrar()" style="margin-bottom:12px;">
+            <button onclick="abrirModalVenta()" class="nb-btn nb-btn-accent" style="width: 100%; font-size: 14px; padding: 12px;">+ Nueva Venta</button>
+          </div>
+        </div>
+        <div class="nb-window">
+          <div class="nb-titlebar"><span class="nb-dot yellow"></span>Lista de Ventas <span id="contadorVentas" style="margin-left:auto; color:var(--ink-soft)"></span></div>
+          <div style="overflow-x: auto; max-height: 600px;">
+            <table class="nb-table">
+              <thead><tr><th>Fecha</th><th>Campaña</th><th>Documento</th><th>Nombre</th><th>Apellido</th><th>Vendedor</th><th>Producto</th><th>Estado</th><th>Adjunto</th></tr></thead>
+              <tbody id="tablaVentas"><tr><td colspan="9"><div class="loader"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: REPORTES AVANZADOS -->
+      <div id="sec-reportes" class="page-section" style="display: none;">
+        <div class="nb-window">
+          <div class="nb-titlebar"><span class="nb-dot green"></span>Filtros de Reporte</div>
+          <div class="nb-content">
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <label style="font-size:11px;color:var(--ink-soft);text-transform:uppercase">MES:</label>
+              <input type="month" id="filtroMes" class="nb-input" style="width: 200px;" onchange="cargarReportes()">
+              <button onclick="cargarReportes()" class="nb-btn nb-btn-primary nb-btn-sm">Actualizar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <div class="report-header">OPERATIVO — <span id="repMesActual">JULIO 2026</span> — ÚLTIMA ACTUALIZACIÓN <span id="repUltimaAct">-</span></div>
+          <div class="nb-grid-6" style="margin-top: 12px;">
+            <div class="report-box"><div class="report-box-label">INSTALADAS</div><div class="report-box-value" id="repInstaladas">-</div></div>
+            <div class="report-box"><div class="report-box-label">CLUSTER C (FIBRA)</div><div class="report-box-value" id="repClusterC">-</div><div class="report-box-sub" id="repClusterCPorc">-</div></div>
+            <div class="report-box"><div class="report-box-label">CASH (EFECTIVO)</div><div class="report-box-value" id="repCash">-</div><div class="report-box-sub" id="repCashPorc">-</div></div>
+            <div class="report-box"><div class="report-box-label">CANCELADO</div><div class="report-box-value" id="repCancelado">-</div><div class="report-box-sub" id="repCanceladoPorc">-</div></div>
+            <div class="report-box"><div class="report-box-label">PENDIENTES (FIBRA)</div><div class="report-box-value" id="repPendientes">-</div></div>
+            <div class="report-box"><div class="report-box-label">TV CUMPLIDAS</div><div class="report-box-value" id="repTV">-</div><div class="report-box-sub" id="repTVPorc">-</div></div>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <div class="report-header">CUMPLIDAS DEL MES POR PRODUCTO</div>
+          <div class="nb-grid-3" style="margin-top: 12px;">
+            <div class="report-box"><div class="report-box-label">FIBRA</div><div class="report-box-value" id="repFibra">-</div></div>
+            <div class="report-box"><div class="report-box-label">PORTABILIDAD</div><div class="report-box-value" id="repPorta">-</div></div>
+            <div class="report-box"><div class="report-box-label">ALTA MÓVIL</div><div class="report-box-value" id="repMovil">-</div></div>
+          </div>
+        </div>
+
+        <div class="nb-grid-2">
+          <div class="report-section">
+            <div class="report-header">MÉTODO DE PAGO (FIBRA)</div>
+            <div class="nb-grid-2" style="margin-top: 12px;">
+              <div class="report-box"><div class="report-box-label">CASH (EFECTIVO)</div><div class="report-box-value" id="repMetodoEfectivo">-</div></div>
+              <div class="report-box"><div class="report-box-label">TARJETA (CRÉDITO)</div><div class="report-box-value" id="repMetodoTarjeta">-</div></div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <div class="report-header">CLUSTER (FIBRA)</div>
+            <div class="nb-grid-4" style="margin-top: 12px;">
+              <div class="report-box"><div class="report-box-label">A</div><div class="report-box-value" id="repClusterA">-</div></div>
+              <div class="report-box"><div class="report-box-label">B</div><div class="report-box-value" id="repClusterB">-</div></div>
+              <div class="report-box"><div class="report-box-label">C</div><div class="report-box-value" id="repClusterC2">-</div></div>
+              <div class="report-box"><div class="report-box-label">D</div><div class="report-box-value" id="repClusterD">-</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nb-window">
+          <div class="nb-titlebar"><span class="nb-dot yellow"></span>RANKING POR VENDEDOR — CUMPLIDAS POR CAMPAÑA · CANCELADAS · FI · CASH · CLUSTER C · TV (N° Y %)</div>
+          <div style="overflow-x: auto;">
+            <table class="nb-table">
+              <thead><tr><th>VENDEDOR</th><th>CUMPLIDAS</th><th>FIBRA</th><th>PORTA</th><th>ALTA MÓVIL</th><th>CANCELADAS</th><th>FI</th><th>CASH</th><th>CLUSTER C</th><th>TV</th></tr></thead>
+              <tbody id="tablaRanking"><tr><td colspan="10"><div class="loader"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: USUARIOS - SOLO ADMIN/TL -->
+      <div id="sec-usuarios" class="page-section" style="display: none;">
+        <div class="nb-window">
+          <div class="nb-titlebar" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:8px;"><span class="nb-dot green"></span>Usuarios del Grupo</div>
+            <button onclick="abrirModalUsuario()" class="nb-btn nb-btn-primary nb-btn-sm">+ Nuevo Usuario</button>
+          </div>
+          <table class="nb-table">
+            <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Team Leader</th><th>Turno</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaUsuarios"><tr><td colspan="7"><div class="loader"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL VENTA -->
+  <div id="modalVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
+    <div style="background: #000; width: 100%; max-width: 800px; border: 2px solid #333; font-family: 'MS Sans Serif', Arial, sans-serif; margin: 20px;">
+      <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 11px;">
+        <span>○ Cargar Venta</span>
+        <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 14px; width: 18px; height: 16px; line-height: 1;">×</button>
+      </div>
+      
+      <div style="padding: 12px; background: #000; color: #c0c0c0; max-height: 80vh; overflow-y: auto;">
+        <fieldset style="border: 1px solid #444; padding: 8px; margin-bottom: 12px;">
+          <legend style="font-size: 11px; padding: 0 4px; color: #c0c0c0;">↓ BUSCAR CLIENTE EXISTENTE POR DNI</legend>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="text" id="vBuscarDNI" placeholder="DNI" style="width: 100px; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;">
+            <input type="text" id="vBuscarDNINombre" placeholder="DNI del cliente..." style="flex: 1; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;" readonly>
+            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Buscar</button>
+          </div>
+        </fieldset>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 12px; font-size: 11px;">
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">CAMPAÑA *</label>
+            <select id="vCampaña" onchange="cambiarCampaña()" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>-- Seleccionar --</option>
+              <option>Movistar Fibra Optica</option>
+              <option>Movistar Portabilidad</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">PRODUCTO *</label>
+            <select id="vProducto" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>-- Seleccionar --</option>
+            </select>
+          </div>
+
+          <div id="vTipoLineaContainer" style="display:none;">
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TIPO DE LÍNEA (PORTABILIDAD) *</label>
+            <select id="vTipoLinea" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>PREPAGO</option>
+              <option>ABONO MENSUAL</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">DOCUMENTO *</label>
+            <input type="text" id="vDoc" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">FECHA NACIMIENTO (DD/MM/AAAA)</label>
+            <input type="text" id="vNac" placeholder="01/01/1990" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">NOMBRE *</label>
+            <input type="text" id="vNombre" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">APELLIDO *</label>
+            <input type="text" id="vApellido" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO TITULAR *</label>
+            <input type="text" id="vTel1" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO ALTERNATIVO</label>
+            <input type="text" id="vTel2" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">NUMERO A TOTALIZAR</label>
+            <input type="text" id="vTelTot" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">MAIL *</label>
+            <input type="email" id="vMail" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">PROVINCIA</label>
+            <select id="vProv" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>-- Seleccionar --</option>
+              <option>Mendoza</option>
+              <option>Buenos Aires</option>
+              <option>Córdoba</option>
+              <option>Santa Fe</option>
+              <option>Tucumán</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">LOCALIDAD *</label>
+            <input type="text" id="vLoc" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">LEAD</label>
+            <input type="text" id="vLead" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">CLUSTER</label>
+            <select id="vCluster" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option value="">--</option>
+              <option>A</option>
+              <option>B</option>
+              <option>C</option>
+              <option>D</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">FI</label>
+            <select id="vFI" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>NO</option>
+              <option>SI</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">CASH</label>
+            <select id="vCash" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>NO</option>
+              <option>SI</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TV</label>
+            <select id="vTV" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>NO</option>
+              <option>SI</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">METODO PAGO</label>
+            <select id="vMetodoPago" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+              <option>EFECTIVO</option>
+              <option>TARJETA</option>
+            </select>
+          </div>
+
+         <input type="hidden" id="vCampañaDet" value="FIBRA">
+        </div>
+
+              <div style="margin-top: 10px; padding: 8px; border: 1px solid #444; background: #0a0a0a;">
+          <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTAR ARCHIVO (Máx 10MB)</label>
+          <input type="file" id="vArchivo" style="width: 100%; margin-top: 4px; font-size: 11px; color: #c0c0c0;">
+        </div>
+      </div>
+
+      <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
+        <span style="font-size: 10px; margin-right: auto; padding-top: 5px; color: #666;">* Campos obligatorios</span>
+        <button onclick="limpiarFormVenta()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">🖊 Limpiar</button>
+        <button onclick="cerrarModales()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
+        <button onclick="guardarNuevaVenta()" id="btnGuardarVenta" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer; font-weight: bold;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL USUARIOS -->
+  <div id="modalUsuario" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: #000; width: 100%; max-width: 450px; border: 2px solid #333;">
+      <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
+        <span id="uTitulo">○ CREAR USUARIO</span>
+        <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 14px; width: 18px; height: 16px; line-height: 1;">×</button>
+      </div>
+      <div style="padding: 16px; background: #000; color: #c0c0c0;">
+        <input type="hidden" id="uOriginal">
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Nombre Completo</label><input type="text" id="uNombre" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Email (Login)</label><input type="email" id="uUser" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Contraseña</label><input type="password" id="uPass" placeholder="Solo al crear o cambiar" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Rol</label><select id="uRol" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>Vendedor</option><option>Team Leader</option><option>Subagente Admin</option></select></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Team Leader</label><input type="text" id="uLeader" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Turno</label><select id="uTurno" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>TM</option><option>TT</option></select></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Estado</label><select id="uEstado" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>ACTIVO</option><option>INACTIVO</option></select></div>
+      </div>
+      <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
+        <button onclick="cerrarModales()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
+        <button onclick="procesarUsuario()" id="btnGuardarUser" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE VENTA -->
+  <div id="modalDetalleVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
+    <div id="contenidoDetalleVenta"></div>
+  </div>
+
+  <script>
+    // ========== CONFIGURACIÓN - CAMBIÁ ESTAS 2 LÍNEAS ==========
+    const API_KEY = 'PEGÁ_TU_API_KEY_DE_GOOGLE_CLOUD_AQUÍ';
+    const SHEET_ID = '1k4Y6oepvCw7jVACWsILo5VICbIIYsR5e45GWYLpbBUc';
+    const GAS_URL = 'PEGÁ_TU_WEB_APP_URL_DE_APPS_SCRIPT_AQUÍ'; // Para guardar ventas
+    // =========================================================
+
+    let todasLasVentas = [];
+    let usuarioActual = null;
+    let filtroTimeout = null;
+    let ventaActualDetalle = null;
+
+    const PRODUCTOS_FIBRA = ['300 Megas','300mb + tv dig + 1 deco','300mb + tv dig.. sin deco','600 Megas','600mb + tv dig + 1 deco','600mb + tv dig.. sin deco','1000 Megas','GIGA + tv dig + 1 deco','GIGA + tv dig.. sin deco'];
+    const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
+
+    // ===== LOGIN CON GOOGLE SHEETS API =====
+    async function hacerLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+      const btn = document.getElementById('btnLogin');
+      const err = document.getElementById('loginError');
+
+      if(!email ||!pass) {
+        err.textContent = 'Completá email y contraseña';
+        return;
+      }
+
+      btn.textContent = 'Ingresando...';
+      btn.disabled = true;
+      err.textContent = '';
+
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if(!data.values) throw new Error('No se pudo leer la hoja Usuarios');
+
+        const headers = data.values[0];
+        const idxEmail = headers.indexOf('Usuario/Email');
+        const idxPass = headers.indexOf('Pass');
+        const idxEstado = headers.indexOf('Estado');
+
+        const userRow = data.values.slice(1).find(row =>
+          row[idxEmail]?.toLowerCase() === email.toLowerCase() &&
+          row[idxEstado] === 'ACTIVO' &&
+          row[idxPass] === pass
+        );
+
+        if(userRow) {
+          usuarioActual = {
+            nombre: userRow[0],
+            email: userRow[1],
+            rol: userRow[2],
+            leader: userRow[3],
+            turno: userRow[4]
+          };
+          sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+          mostrarApp();
+        } else {
+          err.textContent = 'Usuario o contraseña incorrectos';
+        }
+      } catch(e) {
+        err.textContent = 'Error de conexión: ' + e.message;
+      }
+
+      btn.textContent = 'INGRESAR';
+      btn.disabled = false;
+    }
+
+    function cerrarSesion() {
+      sessionStorage.removeItem('paces_user');
+      location.reload();
+    }
+
+    function mostrarApp() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appScreen').style.display = 'block';
+      const userData = JSON.parse(sessionStorage.getItem('paces_user'));
+      usuarioActual = userData;
+      document.getElementById('userInfo').textContent = `${usuarioActual.nombre} | ${usuarioActual.rol}`;
+      if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
+        document.getElementById('linkUsuarios').style.display = 'flex';
+      }
+      const hoy = new Date();
+      const mesActual = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+      document.getElementById('filtroMes').value = mesActual;
+      cargarVentas();
+    }
+
+    // ===== APP =====
+    function showToast(msg, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.borderLeftColor = type === 'error'? 'var(--accent)' : 'var(--primary)';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function showError(msg) {
+      document.getElementById('errorGlobal').innerHTML = `<div class="error-box"><strong>ERROR:</strong> ${msg}</div>`;
+      document.getElementById('errorGlobal').style.display = 'block';
+      document.getElementById('tablaVentas').innerHTML = `<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--accent)'>Error: ${msg}</td></tr>`;
+    }
+
+    function navTo(sectionId, element) {
+      document.querySelectorAll('.page-section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(sectionId).style.display = 'block';
+      document.querySelectorAll('.nb-nav-link').forEach(link => link.classList.remove('active'));
+      if(element) element.classList.add('active');
+      if(sectionId === 'sec-reportes') cargarReportes();
+      if(sectionId === 'sec-usuarios') cargarUsuarios();
+    }
+
+    function cerrarModales() {
+      document.getElementById('modalVenta').style.display = 'none';
+      document.getElementById('modalUsuario').style.display = 'none';
+      document.getElementById('modalDetalleVenta').style.display = 'none';
+    }
+
+    function cambiarCampaña() {
+      const campaña = document.getElementById('vCampaña').value;
+      const selectProd = document.getElementById('vProducto');
+      const tipoLineaCont = document.getElementById('vTipoLineaContainer');
+      selectProd.innerHTML = '<option>-- Seleccionar --</option>';
+      if(campaña === 'Movistar Portabilidad') {
+        PRODUCTOS_PORTA.forEach(p => { selectProd.innerHTML += `<option>${p}</option>`; });
+        document.getElementById('vCampañaDet').value = 'PORTA';
+        tipoLineaCont.style.display = 'block';
+      } else {
+        PRODUCTOS_FIBRA.forEach(p => { selectProd.innerHTML += `<option>${p}</option>`; });
+        document.getElementById('vCampañaDet').value = 'FIBRA';
+        tipoLineaCont.style.display = 'none';
+      }
+    }
+
+    function abrirModalVenta() {
+      document.getElementById('modalVenta').style.display = 'flex';
+      ['vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vBuscarDNI','vBuscarDNINombre'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+      });
+      document.getElementById('vArchivo').value = '';
+      document.getElementById('vCampaña').selectedIndex = 0;
+      document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
+      document.getElementById('vProv').selectedIndex = 0;
+      document.getElementById('vTipoLineaContainer').style.display = 'none';
+      cambiarCampaña();
+    }
+
+    window.onload = function() {
+      const savedUser = sessionStorage.getItem('paces_user');
+      if(savedUser) {
+        mostrarApp();
+      }
+    };
+
+    async function cargarVentas() {
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Ventas?key=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        procesarVentas({success: true, rows: data.values? data.values.slice(1) : []});
+      } catch(err) {
+        showError(err.message);
+      }
+    }
+
+    function procesarVentas(data) {
+      if(!data.success) {
+        showError(data.error);
+        return;
+      }
+      todasLasVentas = data.rows;
+      renderVentas(todasLasVentas);
+      document.getElementById('contadorVentas').textContent = `${todasLasVentas.length} registros`;
+    }
+
+    function renderVentas(data) {
+      const tbody = document.getElementById('tablaVentas');
+      if(data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin ventas registradas</td></tr>";
+        return;
+      }
+      tbody.innerHTML = data.map((r, idx) => {
+        let est = r[7] || "PENDIENTE";
+        let bClass = "nb-badge-blue";
+        if(est === 'CUMPLIDA') bClass = "nb-badge-green";
+        else if(est.includes('CANCELADA') || est.includes('RECUPERAR')) bClass = "nb-badge-red";
+        else if(est === 'PENDIENTE') bClass = "nb-badge-yellow";
+        let adjHTML = (r[10] && r[10].toString().includes("http"))? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        return `<tr onclick="verDetalleVenta(${idx})">
+          <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td><strong>${r[2] || ''}</strong></td>
+          <td>${r[3] || ''}</td><td>${r[4] || ''}</td><td>${r[5] || ''}</td><td>${r[6] || ''}</td>
+          <td><span class="nb-badge ${bClass}" onclick="event.stopPropagation(); cambiarEstado('${r[2]}','${est}')">${est}</span></td>
+          <td>${adjHTML}</td></tr>`;
+      }).join('');
+    }
+
+    function debounceFiltrar() {
+      clearTimeout(filtroTimeout);
+      filtroTimeout = setTimeout(filtrarVentas, 300);
+    }
+
+    function filtrarVentas() {
+      const q = document.getElementById('buscarVenta').value.toLowerCase();
+      const filtradas = todasLasVentas.filter(r =>
+        r[2].toString().toLowerCase().includes(q) ||
+        (r[3] && r[3].toString().toLowerCase().includes(q)) ||
+        (r[4] && r[4].toString().toLowerCase().includes(q)) ||
+        (r[5] && r[5].toString().toLowerCase().includes(q))
+      );
+      renderVentas(filtradas);
+      document.getElementById('contadorVentas').textContent = `${filtradas.length} de ${todasLasVentas.length}`;
+    }
+
+    async function cambiarEstado(doc, estadoActual) {
+      const nuevo = prompt(`Cambiar estado de ${doc}\nActual: ${estadoActual}\n\nNuevo: CUMPLIDA / CANCELADA / PENDIENTE`, estadoActual);
+      if(!nuevo || nuevo === estadoActual) return;
+      showToast('Función cambiar estado requiere Apps Script. Configuralo en GAS_URL', 'error');
+    }
+
+    function verDetalleVenta(idx) {
+      const r = todasLasVentas[idx];
+      ventaActualDetalle = r;
+      const html = `
+        <div class="nb-modal" style="max-width: 1180px; width: 96vw;">
+          <div class="nb-titlebar" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="nb-dot green"></span>
+              <span>${r[3]} ${r[4]}</span>
+              <span class="nb-badge nb-badge-gray" style="margin-left: 4px;">DNI: ${r[2]}</span>
+            </div>
+            <button onclick="cerrarModales()" style="background: none; border: 1px solid rgba(245, 240, 232, 0.4); color: var(--surface); cursor: pointer; padding: 2px 8px; font-family: var(--font-mono); font-size: 12px;">✕</button>
+          </div>
+          <div style="background: var(--surface-2); border-bottom: var(--border); padding: 6px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft);">ESTADO ACTUAL:</span>
+            <span class="nb-badge ${r[7] === 'CUMPLIDA'? 'nb-badge-green' : r[7].includes('CANCELADA')? 'nb-badge-red' : 'nb-badge-blue'}">${r[7]}</span>
+          </div>
+          <div class="nb-modal-body" style="max-height: 80vh; overflow-y: auto;">
+            <div style="border: var(--border-bold); background: var(--surface-2); padding: 10px 12px; margin: 0px 0px 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
+                <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px;">🧩 Productos de esta orden (1)</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button type="button" style="text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 9px; border: 2px solid var(--primary); background: var(--surface); width: 100%;">
+                  <span style="font-weight: 700; font-size: 13px;">${r[6]}</span>
+                  <span style="font-size: 10px; font-family: var(--font-mono); color: var(--ink-soft);">(principal)</span>
+                  <span class="nb-badge nb-badge-blue" style="font-size: 10px;">${r[7]}</span>
+                  <span style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 11px; color: var(--ink-soft);">${r[5]}</span>
+                    <span style="font-size: 10px; background: var(--primary); color: var(--surface); padding: 1px 6px; font-family: var(--font-mono);">ABIERTA</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 4px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">● Detalle</div>
+            <div class="nb-grid-2">
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Campaña</div><div style="font-weight: 600; font-size: 13px;">${r[1]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Producto</div><div style="font-weight: 600; font-size: 13px;">${r[6]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Documento</div><div style="font-weight: 600; font-size: 13px;">DNI: ${r[2]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Nombre completo</div><div style="font-weight: 600; font-size: 13px;">${r[3]} ${r[4]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Fecha venta</div><div style="font-weight: 600; font-size: 13px;">${r[0]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Vendedor</div><div style="font-weight: 600; font-size: 13px;">${r[5]}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">NUMERO A TOTALIZAR</div><div style="font-weight: 600; font-size: 13px;">${r[16] || '-'}</div></div>
+              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Observación</div><div style="font-weight: 600; font-size: 13px; white-space: pre-wrap;">${r[9] || '-'}</div></div>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 22px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">📎 Adjuntos</div>
+            <div>${r[10]? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver adjunto</a>` : '<p style="font-size: 13px; color: var(--ink-soft);">Sin adjuntos aún.</p>'}</div>
+          </div>
+          <div class="nb-modal-footer" style="justify-content: space-between;">
+            <button class="nb-btn nb-btn-sm" onclick="cerrarModales()">✎ Cerrar</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('contenidoDetalleVenta').innerHTML = html;
+      document.getElementById('modalDetalleVenta').style.display = 'flex';
+    }
+
+    async function guardarNuevaVenta() {
+      const btn = document.getElementById('btnGuardarVenta');
+      const doc = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
+      const nombre = document.getElementById('vNombre').value.trim();
+      const apellido = document.getElementById('vApellido').value.trim();
+      if(!doc ||!nombre ||!apellido) {
+        showToast('Completá Documento, Nombre y Apellido', 'error');
+        return;
+      }
+      const file = document.getElementById('vArchivo').files[0];
+      if(file && file.size > 10*1024*1024) {
+        showToast('El archivo no puede superar 10MB', 'error');
+        return;
+      }
+      btn.innerText = "Guardando...";
+      btn.disabled = true;
+      const d = {
+        campana: document.getElementById('vCampaña').value,
+        campanaDet: document.getElementById('vCampañaDet').value,
+        producto: document.getElementById('vProducto').value,
+        documento: doc,
+        nacimiento: document.getElementById('vNac').value,
+        nombre: nombre,
+        apellido: apellido,
+        telTitular: document.getElementById('vTel1').value,
+        telAlt: document.getElementById('vTel2').value,
+        telTot: document.getElementById('vTelTot').value,
+        mail: document.getElementById('vMail').value,
+        provincia: document.getElementById('vProv').value,
+        localidad: document.getElementById('vLoc').value,
+        lead: document.getElementById('vLead').value,
+        observacion: document.getElementById('vObs').value,
+        cluster: document.getElementById('vCluster').value,
+        fi: document.getElementById('vFI').value,
+        cash: document.getElementById('vCash').value,
+        tv: document.getElementById('vTV').value,
+        metodoPago: document.getElementById('vMetodoPago').value,
+        tipoLinea: document.getElementById('vCampaña').value === 'Movistar Portabilidad'? document.getElementById('vTipoLinea').value : null
+      };
+      const enviar = (datos) => {
+        fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({action: 'guardarVenta', data: datos})
+        })
+       .then(r => r.json())
+       .then(res => {
+          btn.innerText = "Guardar";
+          btn.disabled = false;
+          if(res.success) {
+            showToast(res.msg);
+            cerrarModales();
+            cargarVentas();
+          } else {
+            showToast(res.error, 'error');
+          }
+        })
+       .catch(err => {
+          btn.innerText = "Guardar";
+          btn.disabled = false;
+          showToast('Error: ' + err.message, 'error');
+        });
+      };
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          d.archivoData = e.target.result;
+          d.archivoNombre = file.name;
+          enviar(d);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        enviar(d);
+      }
+    }
+
+    function limpiarFormVenta() {
+      ['vBuscarDNI','vBuscarDNINombre','vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+      });
+      document.getElementById('vArchivo').value = '';
+      document.getElementById('vCampaña').selectedIndex = 0;
+      document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
+      document.getElementById('vProv').selectedIndex = 0;
+      document.getElementById('vTipoLineaContainer').style.display = 'none';
+    }
+
+    async function buscarClienteDNI() {
+      const dni = document.getElementById('vBuscarDNI').value.trim();
+      if(!dni) {
+        showToast('Ingresá un DNI', 'error');
+        return;
+      }
+      showToast('Buscando...', 'info');
+    }
+
+    async function cargarUsuarios() {
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        llenarUsuarios({success: true, rows: data.values? data.values.slice(1) : []});
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function llenarUsuarios(data) {
+      const tbody = document.getElementById('tablaUsuarios');
+      if(!data.success) {
+        tbody.innerHTML = `<tr><td colspan='7' style='text-align:center;padding:40px;color:var(--accent)'>${data.error}</td></tr>`;
+        return;
+      }
+      if(data.rows.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin usuarios</td></tr>";
+        return;
+      }
+      tbody.innerHTML = data.rows.map(r => {
+        let btnStr = `<button onclick="editarUser('${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}','${r[5]}')" class="nb-btn nb-btn-sm">Editar</button>`;
+        let badgeColor = r[5] === 'ACTIVO'? 'nb-badge-green' : 'nb-badge-red';
+        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
+      }).join('');
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('uTitulo').innerText = "○ CREAR USUARIO";
+      document.getElementById('uOriginal').value = "";
+      document.getElementById('uNombre').value = "";
+      document.getElementById('uUser').value = "";
+      document.getElementById('uPass').value = "";
+      document.getElementById('uLeader').value = "";
+      document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    function editarUser(nombre, user, rol, leader, turno, estado) {
+      document.getElementById('uTitulo').innerText = "○ EDITAR USUARIO";
+      document.getElementById('uOriginal').value = user;
+      document.getElementById('uNombre').value = nombre;
+      document.getElementById('uUser').value = user;
+      document.getElementById('uPass').value = "";
+      document.getElementById('uPass').placeholder = "Dejar vacío para no cambiar";
+      document.getElementById('uRol').value = rol;
+      document.getElementById('uLeader').value = leader;
+      document.getElementById('uTurno').value = turno;
+      document.getElementById('uEstado').value = estado;
+      document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    async function procesarUsuario() {
+      showToast('Para guardar usuarios necesitas Apps Script. Configurá GAS_URL', 'error');
+    }
+
+    async function cargarReportes() {
+      showToast('Reportes requiere Apps Script. Configurá GAS_URL para datos reales', 'error');
+    }
+
+    function mostrarReportes(data) {
+      if(!data.success) {
+        showToast(data.error, 'error');
+        return;
+      }
+    }
+  </script>
+</body>
+</html>
