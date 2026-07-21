@@ -20,7 +20,7 @@
     .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
     .login-box { background: #1a1a1a; border: 2px solid #333; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(59,130,246,0.3); }
     .login-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--primary); margin-bottom: 30px; letter-spacing: 2px; }
-    .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #555; background: #2a2a2a; color: #ffffff; font-size: 13px; }
+    .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #555; background: #2a2a; color: #ffffff; font-size: 13px; }
     .login-input:focus { outline: none; border-color: var(--primary); background: #333; }
     .login-input::placeholder { color: #888; }
     .login-btn { width: 100%; padding: 12px; background: var(--primary); border: none; color: white; font-weight: 700; cursor: pointer; font-size: 14px; }
@@ -59,7 +59,7 @@
     .nb-table { width: 100%; border-collapse: collapse; text-align: left; }
     .nb-table th { padding: 10px 12px; font-size: 11px; color: var(--ink-soft); border-bottom: var(--border); background: var(--surface-2); text-transform: uppercase; position: sticky; top: 50px; }
     .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); }
-    .nb-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+    .nb-table tr:hover { background: rgba(255,255,0.02); cursor: pointer; }
 
     .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
     .nb-badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
@@ -87,7 +87,6 @@
     @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
     .error-box { background: rgba(239, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
 
-    /* MODAL DETALLE */
     .nb-modal { background: var(--surface); border: 2px solid #333; }
     .nb-modal-body { padding: 12px; background: var(--surface); }
     .nb-inset { background: var(--surface-2); border: var(--border); border-radius: 4px; }
@@ -246,7 +245,7 @@
           <div style="display: flex; gap: 6px; align-items: center;">
             <input type="text" id="vBuscarDNI" placeholder="DNI" style="width: 100px; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;">
             <input type="text" id="vBuscarDNINombre" placeholder="DNI del cliente..." style="flex: 1; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;" readonly>
-            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Buscar</button>
+            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0; font-size: 11px; cursor: pointer;">Buscar</button>
           </div>
         </fieldset>
 
@@ -419,9 +418,9 @@
   </div>
 
   <script>
-    // ========== CONFIGURACIÓN - CAMBIÁ ESTAS 2 LÍNEAS ==========
-const GAS_URL = 'https://kipseik.github.io/crmventas/';https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec// Para guardar ventas
-// =========================================================
+    // ========== CONFIGURACIÓN ==========
+    const GAS_URL = 'https://script.google.com/macros/s/TU_ID_AQUÍ/exec'; // ⚠️ CAMBIÁ ESTA LÍNEA
+    // =========================================================
 
     let todasLasVentas = [];
     let usuarioActual = null;
@@ -431,49 +430,49 @@ const GAS_URL = 'https://kipseik.github.io/crmventas/';https://script.google.com
     const PRODUCTOS_FIBRA = ['300 Megas','300mb + tv dig + 1 deco','300mb + tv dig.. sin deco','600 Megas','600mb + tv dig + 1 deco','600mb + tv dig.. sin deco','1000 Megas','GIGA + tv dig + 1 deco','GIGA + tv dig.. sin deco'];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
-   // ===== LOGIN CON GOOGLE SHEETS API =====
-// ===== LOGIN CON APPS SCRIPT =====
-async function hacerLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  const btn = document.getElementById('btnLogin');
-  const err = document.getElementById('loginError');
+    // ===== LOGIN CON APPS SCRIPT =====
+    async function hacerLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+      const btn = document.getElementById('btnLogin');
+      const err = document.getElementById('loginError');
 
-  if(!email ||!pass) {
-    err.textContent = 'Completá email y contraseña';
-    return;
-  }
+      if(!email ||!pass) {
+        err.textContent = 'Completá email y contraseña';
+        return;
+      }
 
-  btn.textContent = 'Ingresando...';
-  btn.disabled = true;
-  err.textContent = '';
+      btn.textContent = 'Ingresando...';
+      btn.disabled = true;
+      err.textContent = '';
 
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'loginUsuario',
-        email: email,
-        pass: pass
-      })
-    });
-    
-    const data = await res.json();
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'loginUsuario',
+            email: email,
+            pass: pass
+          })
+        });
+        
+        const data = await res.json();
 
-    if(data.success) {
-      usuarioActual = data.user;
-      sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
-      mostrarApp();
-    } else {
-      err.textContent = data.error;
+        if(data.success) {
+          usuarioActual = data.user;
+          sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+          mostrarApp();
+        } else {
+          err.textContent = data.error;
+        }
+      } catch(e) {
+        err.textContent = 'Error de conexión: ' + e.message;
+      }
+
+      btn.textContent = 'INGRESAR';
+      btn.disabled = false;
     }
-  } catch(e) {
-    err.textContent = 'Error de conexión: ' + e.message;
-  }
 
-  btn.textContent = 'INGRESAR';
-  btn.disabled = false;
-}
     function cerrarSesion() {
       sessionStorage.removeItem('paces_user');
       location.reload();
@@ -564,10 +563,12 @@ async function hacerLogin() {
 
     async function cargarVentas() {
       try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Ventas?key=${API_KEY}`;
-        const res = await fetch(url);
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({action: 'getVentas', opts: {}})
+        });
         const data = await res.json();
-        procesarVentas({success: true, rows: data.values? data.values.slice(1) : []});
+        procesarVentas(data);
       } catch(err) {
         showError(err.message);
       }
@@ -624,7 +625,28 @@ async function hacerLogin() {
     async function cambiarEstado(doc, estadoActual) {
       const nuevo = prompt(`Cambiar estado de ${doc}\nActual: ${estadoActual}\n\nNuevo: CUMPLIDA / CANCELADA / PENDIENTE`, estadoActual);
       if(!nuevo || nuevo === estadoActual) return;
-      showToast('Función cambiar estado requiere Apps Script. Configuralo en GAS_URL', 'error');
+      
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'procesarAccion',
+            doc: doc,
+            nuevoEstado: nuevo,
+            obs: '',
+            admin: usuarioActual.email
+          })
+        });
+        const data = await res.json();
+        if(data.success) {
+          showToast(data.msg);
+          cargarVentas();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+      }
     }
 
     function verDetalleVenta(idx) {
@@ -723,28 +745,27 @@ async function hacerLogin() {
         metodoPago: document.getElementById('vMetodoPago').value,
         tipoLinea: document.getElementById('vCampaña').value === 'Movistar Portabilidad'? document.getElementById('vTipoLinea').value : null
       };
-      const enviar = (datos) => {
-        fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({action: 'guardarVenta', data: datos})
-        })
-       .then(r => r.json())
-       .then(res => {
+      const enviar = async (datos) => {
+        try {
+          const res = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({action: 'guardarVenta', data: datos})
+          });
+          const result = await res.json();
           btn.innerText = "Guardar";
           btn.disabled = false;
-          if(res.success) {
-            showToast(res.msg);
+          if(result.success) {
+            showToast(result.msg);
             cerrarModales();
             cargarVentas();
           } else {
-            showToast(res.error, 'error');
+            showToast(result.error, 'error');
           }
-        })
-       .catch(err => {
+        } catch(err) {
           btn.innerText = "Guardar";
           btn.disabled = false;
           showToast('Error: ' + err.message, 'error');
-        });
+        }
       };
       if (file) {
         const reader = new FileReader();
@@ -777,15 +798,35 @@ async function hacerLogin() {
         showToast('Ingresá un DNI', 'error');
         return;
       }
-      showToast('Buscando...', 'info');
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({action: 'buscarClientePorDNI', dni: dni})
+        });
+        const data = await res.json();
+        if(data.success) {
+          document.getElementById('vBuscarDNINombre').value = data.data.nombre + ' ' + data.data.apellido;
+          document.getElementById('vNombre').value = data.data.nombre;
+          document.getElementById('vApellido').value = data.data.apellido;
+          document.getElementById('vTel1').value = data.data.telefono || '';
+          document.getElementById('vMail').value = data.data.mail || '';
+          showToast('Cliente encontrado', 'success');
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+      }
     }
 
     async function cargarUsuarios() {
       try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
-        const res = await fetch(url);
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({action: 'getUsuarios'})
+        });
         const data = await res.json();
-        llenarUsuarios({success: true, rows: data.values? data.values.slice(1) : []});
+        llenarUsuarios(data);
       } catch(err) {
         showToast(err.message, 'error');
       }
@@ -804,7 +845,7 @@ async function hacerLogin() {
       tbody.innerHTML = data.rows.map(r => {
         let btnStr = `<button onclick="editarUser('${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}','${r[5]}')" class="nb-btn nb-btn-sm">Editar</button>`;
         let badgeColor = r[5] === 'ACTIVO'? 'nb-badge-green' : 'nb-badge-red';
-        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
+        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
       }).join('');
     }
 
@@ -833,11 +874,56 @@ async function hacerLogin() {
     }
 
     async function procesarUsuario() {
-      showToast('Para guardar usuarios necesitas Apps Script. Configurá GAS_URL', 'error');
+      const original = document.getElementById('uOriginal').value;
+      const data = {
+        nombre: document.getElementById('uNombre').value,
+        usuario: document.getElementById('uUser').value,
+        pass: document.getElementById('uPass').value,
+        rol: document.getElementById('uRol').value,
+        teamLeader: document.getElementById('uLeader').value,
+        turno: document.getElementById('uTurno').value,
+        estado: document.getElementById('uEstado').value
+      };
+
+      if(!data.nombre || !data.usuario) {
+        showToast('Completá Nombre y Email', 'error');
+        return;
+      }
+
+      try {
+        const action = original ? 'editarUsuarioGS' : 'guardarUsuario';
+        const body = original ? {action, originalEmail: original, data} : {action, data};
+        
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+        const result = await res.json();
+        
+        if(result.success) {
+          showToast(result.msg);
+          cerrarModales();
+          cargarUsuarios();
+        } else {
+          showToast(result.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+      }
     }
 
     async function cargarReportes() {
-      showToast('Reportes requiere Apps Script. Configurá GAS_URL para datos reales', 'error');
+      const mesFiltro = document.getElementById('filtroMes').value;
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro})
+        });
+        const data = await res.json();
+        mostrarReportes(data);
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
     }
 
     function mostrarReportes(data) {
@@ -845,6 +931,40 @@ async function hacerLogin() {
         showToast(data.error, 'error');
         return;
       }
+      
+      document.getElementById('repMesActual').textContent = document.getElementById('filtroMes').value;
+      document.getElementById('repUltimaAct').textContent = data.fechaActualizacion;
+      document.getElementById('repInstaladas').textContent = data.instaladas;
+      document.getElementById('repClusterC').textContent = data.clusterC;
+      document.getElementById('repCash').textContent = data.cash;
+      document.getElementById('repCancelado').textContent = data.cancelado;
+      document.getElementById('repPendientes').textContent = data.pendientes;
+      document.getElementById('repTV').textContent = data.tvCumplidas;
+      document.getElementById('repFibra').textContent = data.fibra;
+      document.getElementById('repPorta').textContent = data.portabilidad;
+      document.getElementById('repMovil').textContent = data.altaMovil;
+      document.getElementById('repMetodoEfectivo').textContent = data.metodoPago.efectivo;
+      document.getElementById('repMetodoTarjeta').textContent = data.metodoPago.tarjeta;
+      document.getElementById('repClusterA').textContent = data.clusters.A;
+      document.getElementById('repClusterB').textContent = data.clusters.B;
+      document.getElementById('repClusterC2').textContent = data.clusters.C;
+      document.getElementById('repClusterD').textContent = data.clusters.D;
+      
+      const tbody = document.getElementById('tablaRanking');
+      tbody.innerHTML = data.ranking.map(r => `
+        <tr>
+          <td>${r.vendedor}</td>
+          <td>${r.cumplidas}</td>
+          <td>${r.fibra}</td>
+          <td>${r.porta}</td>
+          <td>${r.movil}</td>
+          <td>${r.canceladas}</td>
+          <td>${r.fi}</td>
+          <td>${r.cash}</td>
+          <td>${r.clusterC}</td>
+          <td>${r.tv}</td>
+        </tr>
+      `).join('');
     }
   </script>
 </body>
