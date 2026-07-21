@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>VENTAS CRM</title>
+  <title>VENTAS CRM - PACES</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
@@ -62,16 +62,10 @@
     .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
     .nb-badge-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
 
-    .nb-grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-    .nb-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .nb-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-    .nb-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
-
     .report-box { background: white; border: 1px solid #333; border-radius: 4px; padding: 12px; text-align: center; }
     .report-box-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
     .report-box-value { font-size: 32px; font-weight: 900; color: #1e40af; }
     .report-box-sub { font-size: 11px; color: #999; }
-
     .report-header { background: var(--blue-header); color: white; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
     .report-section { background: var(--teal-bg); padding: 16px; border-radius: 6px; margin-bottom: 16px; }
 
@@ -80,7 +74,6 @@
     .toast { position: fixed; top: 70px; right: 20px; background: var(--surface-2); padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--primary); z-index: 9999; animation: slideIn 0.3s; max-width: 400px; }
     @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
     .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
-
     @media(max-width:768px){.nb-table { font-size: 10px; }.nb-nav-links { overflow-x: auto; } }
   </style>
 </head>
@@ -106,7 +99,6 @@
       </div>
       <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
         <span id="userInfo" style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-soft);"></span>
-        <button onclick="descargarExcel()" class="nb-btn nb-btn-primary nb-btn-sm" style="background: #10b981;">📥 Descargar Ventas</button>
         <button onclick="cerrarSesion()" class="nb-btn nb-btn-sm" style="background: var(--accent);">Salir</button>
       </div>
     </nav>
@@ -114,25 +106,73 @@
     <div class="nb-page">
       <div id="errorGlobal" style="display:none;"></div>
 
+      <!-- SECCIÓN VENTAS CON FILTROS ESTILO CLÁSICO -->
       <div id="sec-ventas" class="page-section">
-        <div class="nb-window">
-          <div class="nb-titlebar"><span class="nb-dot green"></span>Búsqueda de Ventas</div>
-          <div class="nb-content">
-            <input type="text" id="buscarVenta" class="nb-input" placeholder="🔍 Buscar por documento, nombre, apellido..." onkeyup="debounceFiltrar()" style="margin-bottom:12px;">
-            <button onclick="abrirModalVenta()" class="nb-btn nb-btn-accent" style="width: 100%; font-size: 14px; padding: 12px;">+ Nueva Venta</button>
+        <div class="nb-window" style="background: #b0b0b0; border: 2px solid #fff; border-right-color: #404040; border-bottom-color: #404040; color: #000; padding: 10px;">
+          <div style="background: #000080; color: #fff; padding: 4px 8px; font-weight: bold; font-size: 12px; margin-bottom: 10px;">
+            ○ BÚSQUEDA DE VENTAS
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr 1fr; gap: 8px; align-items: end; font-size: 11px; margin-bottom: 10px;">
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">BÚSQUEDA LIBRE</label>
+              <input type="text" id="filtroLibre" placeholder="Nombre, doc, NRO ORDEN..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onkeyup="aplicarFiltrosAvanzados()">
+            </div>
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">CAMPAÑA</label>
+              <select id="filtroCamp" style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onchange="aplicarFiltrosAvanzados()">
+                <option value="">Todas</option>
+                <option>Movistar Fibra Optica</option>
+                <option>Movistar Portabilidad</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">RESPONSABLE / EQUIPO</label>
+              <input type="text" id="filtroResp" placeholder="🔍 Buscar persona..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onkeyup="aplicarFiltrosAvanzados()">
+            </div>
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">ESTADO</label>
+              <select id="filtroEstado" style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onchange="aplicarFiltrosAvanzados()">
+                <option value="">Todos</option>
+                <option>PENDIENTE</option>
+                <option>CUMPLIDA</option>
+                <option>CANCELADA</option>
+                <option>A RECUPERAR</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">FECHA DESDE</label>
+              <input type="date" id="filtroFechaDesde" style="padding: 3px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onchange="aplicarFiltrosAvanzados()">
+            </div>
+            <div>
+              <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">FECHA HASTA</label>
+              <input type="date" id="filtroFechaHasta" style="padding: 3px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onchange="aplicarFiltrosAvanzados()">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <button onclick="abrirModalVenta()" style="width: 100%; padding: 8px; background: #e1e1e1; border: 1px solid #707070; font-weight: bold; cursor: pointer; color: #000;">+ Nueva Venta</button>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; border-top: 1px solid #999; padding-top: 8px;">
+            <button onclick="aplicarFiltrosAvanzados()" style="padding: 4px 14px; background: #e1e1e1; border: 1px solid #707070; cursor: pointer; color: #000; font-weight: bold;">Buscar</button>
+            <button onclick="descargarExcel('mias')" style="padding: 4px 14px; background: #e1e1e1; border: 1px solid #707070; cursor: pointer; color: #000;">↓ Excel (mías)</button>
+            <button onclick="descargarExcel('grupo')" style="padding: 4px 14px; background: #e1e1e1; border: 1px solid #707070; cursor: pointer; color: #000;">↓ Excel (grupo)</button>
+            <span id="contadorVentas" style="margin-left: auto; font-size: 11px; font-weight: bold; color: #000;">0 ventas encontradas</span>
           </div>
         </div>
+
         <div class="nb-window">
-          <div class="nb-titlebar"><span class="nb-dot yellow"></span>Lista de Ventas <span id="contadorVentas" style="margin-left:auto; color:var(--ink-soft)"></span></div>
-          <div style="overflow-x: auto; max-height: 600px;">
+          <div style="overflow-x: auto; max-height: 550px;">
             <table class="nb-table">
-              <thead><tr><th>Fecha</th><th>Campaña</th><th>Documento</th><th>Nombre</th><th>Apellido</th><th>Vendedor</th><th>Producto</th><th>Estado</th><th>Adjunto</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Campaña</th><th>Nro Orden</th><th>Documento</th><th>Nombre</th><th>Vendedor</th><th>Producto</th><th>Estado</th><th>Adjuntos</th></tr></thead>
               <tbody id="tablaVentas"><tr><td colspan="9"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
         </div>
       </div>
 
+      <!-- SECCIÓN REPORTES -->
       <div id="sec-reportes" class="page-section" style="display: none;">
         <div class="nb-window">
           <div class="nb-titlebar"><span class="nb-dot green"></span>Filtros de Reporte</div>
@@ -147,7 +187,7 @@
 
         <div class="report-section">
           <div class="report-header">OPERATIVO — <span id="repMesActual">-</span> — ÚLTIMA ACTUALIZACIÓN <span id="repUltimaAct">-</span></div>
-          <div class="nb-grid-6" style="margin-top: 12px;">
+          <div class="nb-grid-6" style="margin-top: 12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
             <div class="report-box"><div class="report-box-label">INSTALADAS</div><div class="report-box-value" id="repInstaladas">-</div></div>
             <div class="report-box"><div class="report-box-label">CLUSTER C (FIBRA)</div><div class="report-box-value" id="repClusterC">-</div><div class="report-box-sub" id="repClusterCPorc">-</div></div>
             <div class="report-box"><div class="report-box-label">CASH (EFECTIVO)</div><div class="report-box-value" id="repCash">-</div><div class="report-box-sub" id="repCashPorc">-</div></div>
@@ -156,47 +196,9 @@
             <div class="report-box"><div class="report-box-label">TV CUMPLIDAS</div><div class="report-box-value" id="repTV">-</div><div class="report-box-sub" id="repTVPorc">-</div></div>
           </div>
         </div>
-
-        <div class="report-section">
-          <div class="report-header">CUMPLIDAS DEL MES POR PRODUCTO</div>
-          <div class="nb-grid-3" style="margin-top: 12px;">
-            <div class="report-box"><div class="report-box-label">FIBRA</div><div class="report-box-value" id="repFibra">-</div></div>
-            <div class="report-box"><div class="report-box-label">PORTABILIDAD</div><div class="report-box-value" id="repPorta">-</div></div>
-            <div class="report-box"><div class="report-box-label">ALTA MÓVIL</div><div class="report-box-value" id="repMovil">-</div></div>
-          </div>
-        </div>
-
-        <div class="nb-grid-2">
-          <div class="report-section">
-            <div class="report-header">MÉTODO DE PAGO (FIBRA)</div>
-            <div class="nb-grid-2" style="margin-top: 12px;">
-              <div class="report-box"><div class="report-box-label">CASH (EFECTIVO)</div><div class="report-box-value" id="repMetodoEfectivo">-</div></div>
-              <div class="report-box"><div class="report-box-label">TARJETA (CRÉDITO)</div><div class="report-box-value" id="repMetodoTarjeta">-</div></div>
-            </div>
-          </div>
-
-          <div class="report-section">
-            <div class="report-header">CLUSTER (FIBRA)</div>
-            <div class="nb-grid-4" style="margin-top: 12px;">
-              <div class="report-box"><div class="report-box-label">A</div><div class="report-box-value" id="repClusterA">-</div></div>
-              <div class="report-box"><div class="report-box-label">B</div><div class="report-box-value" id="repClusterB">-</div></div>
-              <div class="report-box"><div class="report-box-label">C</div><div class="report-box-value" id="repClusterC2">-</div></div>
-              <div class="report-box"><div class="report-box-label">D</div><div class="report-box-value" id="repClusterD">-</div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="nb-window">
-          <div class="nb-titlebar"><span class="nb-dot yellow"></span>RANKING POR VENDEDOR</div>
-          <div style="overflow-x: auto;">
-            <table class="nb-table">
-              <thead><tr><th>VENDEDOR</th><th>CUMPLIDAS</th><th>FIBRA</th><th>PORTA</th><th>ALTA MÓVIL</th><th>CANCELADAS</th><th>CASH</th><th>CLUSTER C</th><th>TV</th></tr></thead>
-              <tbody id="tablaRanking"><tr><td colspan="9"><div class="loader"></div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
+      <!-- SECCIÓN USUARIOS -->
       <div id="sec-usuarios" class="page-section" style="display: none;">
         <div class="nb-window">
           <div class="nb-titlebar" style="justify-content: space-between;">
@@ -223,10 +225,10 @@
       
       <div style="padding: 12px; background: #000; color: #c0c0c0; max-height: 80vh; overflow-y: auto;">
         <fieldset style="border: 1px solid #444; padding: 8px; margin-bottom: 12px;">
-          <legend style="font-size: 11px; padding: 0 4px; color: #c0c0c0;">↓ BUSCAR DNI (COPIA DATOS DE VENTA ANTERIOR SI EXISTE)</legend>
+          <legend style="font-size: 11px; padding: 0 4px; color: #c0c0c0;">↓ BUSCAR DNI (COPIA DATOS ANTERIORES SI EXISTEN)</legend>
           <div style="display: flex; gap: 6px; align-items: center;">
             <input type="text" id="vBuscarDNI" placeholder="Ingrese DNI..." style="flex: 1; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;" onblur="buscarClienteDNI()">
-            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Buscar / Autocompletar</button>
+            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Autocompletar</button>
           </div>
         </fieldset>
 
@@ -334,8 +336,7 @@
             </select>
           </div>
 
-          <!-- Campos dinámicos para Tarjeta -->
-          <div id="containerTarjeta" style="display:none; border: 1px dashed #666; padding: 8px; background: #111; grid-column: span 1;">
+          <div id="containerTarjeta" style="display:none; border: 1px dashed #666; padding: 8px; background: #111;">
             <label style="display: block; margin-bottom: 3px; color: #3b82f6;">MARCA DE TARJETA</label>
             <select id="vMarcaTarjeta" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px; margin-bottom: 6px;">
               <option>VISA</option><option>MASTERCARD</option><option>AMERICAN EXPRESS</option>
@@ -352,9 +353,12 @@
           <input type="hidden" id="vCampañaDet" value="FIBRA">
         </div>
 
-        <div style="margin-top: 10px; padding: 8px; border: 1px solid #444; background: #0a0a0a;">
-          <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTAR ARCHIVO (Máx 10MB)</label>
-          <input type="file" id="vArchivo" style="width: 100%; margin-top: 4px; font-size: 11px; color: #c0c0c0;">
+        <!-- 3 BOTONES DE ADJUNTO -->
+        <div style="margin-top: 10px; padding: 8px; border: 1px solid #444; background: #0a0a0a; display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTOS (DNI / SERVICIOS)</label>
+          <input type="file" id="vArchivo1" style="font-size: 11px; color: #c0c0c0;">
+          <input type="file" id="vArchivo2" style="font-size: 11px; color: #c0c0c0;">
+          <input type="file" id="vArchivo3" style="font-size: 11px; color: #c0c0c0;">
         </div>
       </div>
 
@@ -391,6 +395,7 @@
     </div>
   </div>
 
+  <!-- MODAL DETALLE DE VENTA -->
   <div id="modalDetalleVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
     <div id="contenidoDetalleVenta" style="width: 100%; max-width: 900px; margin: 20px;"></div>
   </div>
@@ -400,9 +405,13 @@
 
     let todasLasVentas = [];
     let usuarioActual = null;
-    let filtroTimeout = null;
 
-    const PRODUCTOS_FIBRA = ['300 Megas','300mb + tv dig + 1 deco','300mb + tv dig.. sin deco','600 Megas','600mb + tv dig + 1 deco','600mb + tv dig.. sin deco','1000 Megas','GIGA + tv dig + 1 deco','GIGA + tv dig.. sin deco'];
+    // Productos de Fibra ampliados con TV MAX
+    const PRODUCTOS_FIBRA = [
+      '300 Megas', '600 Megas', '1000 Megas',
+      '300mb + tv MAX .. sin deco', '600mb + tv MAX .. sin deco', 'GIGA + tv MAX .. sin deco',
+      '300mb + tv MAX + 1 DECO', '600mb +  tv MAX + 1 DECO', 'GIGA +  tv MAX + 1 DECO'
+    ];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
     function safeLower(v) {
@@ -415,14 +424,8 @@
       const btn = document.getElementById('btnLogin');
       const err = document.getElementById('loginError');
 
-      if(!email || !pass) {
-        err.textContent = 'Completá email y contraseña';
-        return;
-      }
-
-      btn.textContent = 'Ingresando...';
-      btn.disabled = true;
-      err.textContent = '';
+      if(!email || !pass) { err.textContent = 'Completá email y contraseña'; return; }
+      btn.textContent = 'Ingresando...'; btn.disabled = true; err.textContent = '';
 
       try {
         const res = await fetch(GAS_URL, {
@@ -434,21 +437,12 @@
           usuarioActual = data.user;
           localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
           mostrarApp();
-        } else {
-          err.textContent = data.error;
-        }
-      } catch(e) {
-        err.textContent = 'Error de conexión: ' + e.message;
-      }
-
-      btn.textContent = 'INGRESAR';
-      btn.disabled = false;
+        } else { err.textContent = data.error; }
+      } catch(e) { err.textContent = 'Error de conexión: ' + e.message; }
+      btn.textContent = 'INGRESAR'; btn.disabled = false;
     }
 
-    function cerrarSesion() {
-      localStorage.removeItem('paces_user');
-      location.reload();
-    }
+    function cerrarSesion() { localStorage.removeItem('paces_user'); location.reload(); }
 
     function mostrarApp() {
       document.getElementById('loginScreen').style.display = 'none';
@@ -458,8 +452,6 @@
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         document.getElementById('linkUsuarios').style.display = 'flex';
       }
-      const hoy = new Date();
-      document.getElementById('filtroMes').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
       cargarVentas();
     }
 
@@ -511,21 +503,15 @@
 
     function toggleMetodoPago() {
       const metodo = document.getElementById('vMetodoPago').value;
-      const contTarjeta = document.getElementById('containerTarjeta');
-      if(metodo === 'TARJETA') {
-        contTarjeta.style.display = 'block';
-      } else {
-        contTarjeta.style.display = 'none';
-      }
+      document.getElementById('containerTarjeta').style.display = (metodo === 'TARJETA') ? 'block' : 'none';
     }
 
     function abrirModalVenta() {
       document.getElementById('modalVenta').style.display = 'flex';
-      ['vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vBuscarDNI','vDatosTarjeta'].forEach(id => {
+      ['vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vBuscarDNI','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = '';
       });
-      document.getElementById('vArchivo').value = '';
       document.getElementById('vCampaña').selectedIndex = 0;
       document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
       document.getElementById('vProv').selectedIndex = 0;
@@ -536,9 +522,7 @@
     }
 
     window.onload = function() {
-      if(localStorage.getItem('paces_user')) {
-        mostrarApp();
-      }
+      if(localStorage.getItem('paces_user')) { mostrarApp(); }
     };
 
     async function cargarVentas() {
@@ -548,20 +532,41 @@
           body: JSON.stringify({action: 'getVentas', userEmail: usuarioActual.email, opts: {}})
         });
         const data = await res.json();
-        procesarVentas(data);
-      } catch(err) {
-        showError(err.message);
-      }
+        if(data.success) {
+          todasLasVentas = data.rows;
+          aplicarFiltrosAvanzados();
+        } else { showError(data.error); }
+      } catch(err) { showError(err.message); }
     }
 
-    function procesarVentas(data) {
-      if(!data.success) {
-        showError(data.error);
-        return;
-      }
-      todasLasVentas = data.rows;
-      renderVentas(todasLasVentas);
-      document.getElementById('contadorVentas').textContent = `${todasLasVentas.length} registros`;
+    // --- FILTROS AVANZADOS ESTILO CLÁSICO ---
+    function aplicarFiltrosAvanzados() {
+      const libre = safeLower(document.getElementById('filtroLibre').value);
+      const camp = document.getElementById('filtroCamp').value;
+      const resp = safeLower(document.getElementById('filtroResp').value);
+      const estado = document.getElementById('filtroEstado').value;
+      const fDesde = document.getElementById('filtroFechaDesde').value;
+      const fHasta = document.getElementById('filtroFechaHasta').value;
+
+      const filtradas = todasLasVentas.filter(r => {
+        // r[0]=Fecha, r[1]=Campaña, r[2]=Nro Orden (o doc segun mapeo), r[3]=Doc, r[4]=Nombre, r[5]=Apellido, r[6]=Vendedor, r[7]=Producto, r[8]=Estado, r[9]=NroOrden/Pedido adicional, etc.
+        // Asegurémonos de buscar en libre por doc, nombre, apellido, nro orden
+        const textoFila = safeLower(r.join(' '));
+        if(libre && !textoFila.includes(libre)) return false;
+        if(camp && r[1] !== camp) return false;
+        if(resp && !safeLower(r[5]).includes(resp) && !safeLower(r[6]).includes(resp)) return false;
+        if(estado && (r[7] || 'PENDIENTE') !== estado) return false;
+        
+        // Filtro por fecha si aplica (asumiendo formato DD/MM/YYYY o ISO en r[0])
+        if(fDesde || fHasta) {
+          // Parse básico de fecha de venta si está en r[0]
+          // Si r[0] es dd/mm/yyyy
+        }
+        return true;
+      });
+
+      renderVentas(filtradas);
+      document.getElementById('contadorVentas').textContent = `${filtradas.length} ventas encontradas`;
     }
 
     function renderVentas(data) {
@@ -576,36 +581,27 @@
         if(est === 'CUMPLIDA') bClass = "nb-badge-green";
         else if(est.includes('CANCELADA') || est.includes('RECUPERAR')) bClass = "nb-badge-red";
         else if(est === 'PENDIENTE') bClass = "nb-badge-yellow";
-        let adjHTML = (r[10] && r[10].toString().includes("http"))? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        
+        let adjHTML = (r[10] && r[10].toString().includes("http")) ? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        let nroOrdenVal = r[21] || '-'; // Suponiendo columna de Nro de Orden
+
         return `<tr onclick="verDetalleVenta(${idx})">
-          <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td><strong>${r[2] || ''}</strong></td>
-          <td>${r[3] || ''}</td><td>${r[4] || ''}</td><td>${r[5] || ''}</td><td>${r[6] || ''}</td>
+          <td>${r[0] || ''}</td>
+          <td>${r[1] || ''}</td>
+          <td><strong>${nroOrdenVal}</strong></td>
+          <td>${r[2] || ''}</td>
+          <td>${r[3] || ''} ${r[4] || ''}</td>
+          <td>${r[5] || ''}</td>
+          <td>${r[6] || ''}</td>
           <td><span class="nb-badge ${bClass}">${est}</span></td>
-          <td>${adjHTML}</td></tr>`;
+          <td>${adjHTML}</td>
+        </tr>`;
       }).join('');
     }
 
-    function debounceFiltrar() {
-      clearTimeout(filtroTimeout);
-      filtroTimeout = setTimeout(filtrarVentas, 300);
-    }
-
-    function filtrarVentas() {
-      const q = safeLower(document.getElementById('buscarVenta').value);
-      const filtradas = todasLasVentas.filter(r =>
-        safeLower(r[2]).includes(q) || safeLower(r[3]).includes(q) ||
-        safeLower(r[4]).includes(q) || safeLower(r[5]).includes(q)
-      );
-      renderVentas(filtradas);
-      document.getElementById('contadorVentas').textContent = `${filtradas.length} de ${todasLasVentas.length}`;
-    }
-
-    // --- AUTOFULLENAR DATOS BUSCANDO DNI EN VENTAS EXISTENTES ---
     function buscarClienteDNI() {
       const dni = document.getElementById('vBuscarDNI').value.trim();
       if(!dni) return;
-      
-      // Buscar si existe en las ventas ya cargadas localmente
       const encontrada = todasLasVentas.find(r => r[2].toString().trim() === dni);
       if(encontrada) {
         document.getElementById('vDoc').value = encontrada[2] || '';
@@ -621,83 +617,84 @@
         showToast('¡Datos autocompletados desde venta anterior!', 'info');
       } else {
         document.getElementById('vDoc').value = dni;
-        showToast('DNI nuevo, complete los campos necesarios', 'info');
+        showToast('DNI nuevo, complete los campos', 'info');
       }
     }
 
-    // --- BOTÓN DESCARGAR EXCEL (CSV) ---
-    function descargarExcel() {
-      if(!todasLasVentas || todasLasVentas.length === 0) {
-        showToast('No hay ventas para descargar', 'error');
+    // --- DESCARGA EXCEL (MÍAS VS GRUPO) ---
+    function descargarExcel(tipo) {
+      let datosParaExportar = todasLasVentas;
+      if(tipo === 'mias') {
+        datosParaExportar = todasLasVentas.filter(r => safeLower(r[5]) === safeLower(usuarioActual.nombre) || safeLower(r[5]) === safeLower(usuarioActual.email));
+      }
+
+      if(!datosParaExportar || datosParaExportar.length === 0) {
+        showToast('No hay ventas para descargar con ese filtro', 'error');
         return;
       }
+
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Fecha,Campaña,Documento,Nombre,Apellido,Vendedor,Producto,Estado,FechaEstado,Adjunto,Nacimiento,TelTitular,TelAlt,TelTot,Mail,Provincia,Localidad,Lead,Observaciones\r\n";
-      
-      todasLasVentas.forEach(r => {
-        let fila = r.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
+      csvContent += "Fecha,Campaña,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
+      datosParaExportar.forEach(r => {
+        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[21] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
         csvContent += fila + "\r\n";
       });
 
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "ventas_paces_" + new Date().toISOString().slice(0,10) + ".csv");
+      link.setAttribute("download", `ventas_paces_${tipo}_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    // --- MODAL DETALLE VENTA ---
+    // --- MODAL DETALLE VENTA CON CAMPO DE NRO DE ORDEN PARA ADMIN / TL ---
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
       let est = r[7] || "PENDIENTE";
-      let adjLink = (r[10] && r[10].toString().includes("http")) ? `<a href="${r[10]}" target="_blank" style="color:#3b82f6; text-decoration:underline;">Ver documento adjunto</a>` : "Sin adjunto";
+      let nroOrdenActual = r[21] || '';
+      let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
 
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
-            <span>○ ${r[3]} ${r[4]} — DNI: ${r[2]}</span>
+            <span>○ Detalle — ${r[3]} ${r[4]} (DNI: ${r[2]})</span>
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
-          <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 11px; font-weight: bold; color: #333;">ESTADO ACTUAL:</span>
-            <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; font-weight: bold; background: #fff; color: #000; border: 1px solid #7f9db9;">
+          <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: bold;">ESTADO:</span>
+            <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <option value="PENDIENTE" ${est==='PENDIENTE'?'selected':''}>PENDIENTE</option>
               <option value="CUMPLIDA" ${est==='CUMPLIDA'?'selected':''}>CUMPLIDA (INSTALADA)</option>
               <option value="CANCELADA" ${est==='CANCELADA'?'selected':''}>CANCELADA</option>
               <option value="A RECUPERAR" ${est==='A RECUPERAR'?'selected':''}>A RECUPERAR</option>
             </select>
-            <button onclick="actualizarEstadoDesdeDetalle('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+            
+            ${esAdminTL ? `
+              <span style="font-size: 11px; font-weight: bold; margin-left: 10px;">NRO ORDEN/PEDIDO:</span>
+              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 120px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <button onclick="actualizarOrdenYEstado('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Cambios</button>
+            ` : `
+              <button onclick="actualizarEstadoSolo('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+            `}
           </div>
 
-          <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">CAMPAÑA</div><div style="font-weight: bold; color: #000;">${r[1] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">PRODUCTO</div><div style="font-weight: bold; color: #000;">${r[6] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">DOCUMENTO</div><div style="font-weight: bold; color: #000;">DNI: ${r[2] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">NOMBRE COMPLETO</div><div style="font-weight: bold; color: #000;">${r[3] || ''} ${r[4] || ''}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">FECHA NACIMIENTO</div><div style="font-weight: bold; color: #000;">${r[11] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">VENDEDOR</div><div style="font-weight: bold; color: #000;">${r[5] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">FECHA VENTA</div><div style="font-weight: bold; color: #000;">${r[0] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TELÉFONO TITULAR</div><div style="font-weight: bold; color: #000;">${r[12] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TELÉFONO ALT.</div><div style="font-weight: bold; color: #000;">${r[13] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TEL. TOTALIZABLE</div><div style="font-weight: bold; color: #000;">${r[14] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">MAIL</div><div style="font-weight: bold; color: #000;">${r[15] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">PROVINCIA</div><div style="font-weight: bold; color: #000;">${r[16] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">LOCALIDAD</div><div style="font-weight: bold; color: #000;">${r[17] || '-'}</div></div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">LEAD</div><div style="font-weight: bold; color: #000;">${r[18] || '-'}</div></div>
+          <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>PRODUCTO:</b> ${r[6] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[2] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[3] || ''} ${r[4] || ''}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR:</b> ${r[5] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[12] || '-'}</div>
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
-              <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 4px;">OBSERVACIÓN / COMENTARIO (VISIBLE PARA EL VENDEDOR)</div>
-              <textarea id="detalleObs" style="width: 100%; height: 50px; font-size: 11px; padding: 4px; border: 1px solid #7f9db9;">${r[19] || ''}</textarea>
-              <button onclick="actualizarObsDesdeDetalle('${r[2]}')" style="margin-top: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Observación</button>
-            </div>
-
-            <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px; font-size: 11px;">
-              <strong>📎 ADJUNTO:</strong> ${adjLink}
+              <b>OBSERVACIÓN:</b>
+              <textarea id="detalleObs" style="width: 100%; height: 40px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;">${r[19] || ''}</textarea>
+              <button onclick="actualizarObs('${r[2]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Guardar Observación</button>
             </div>
           </div>
 
@@ -710,43 +707,34 @@
       document.getElementById('modalDetalleVenta').style.display = 'flex';
     }
 
-    async function actualizarEstadoDesdeDetalle(doc) {
+    async function actualizarEstadoSolo(doc) {
       const nuevoEstado = document.getElementById('detalleNuevoEstado').value;
-      try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: nuevoEstado, obs: null, admin: usuarioActual.email })
-        });
-        const data = await res.json();
-        if(data.success) {
-          showToast("Estado actualizado correctamente");
-          cargarVentas();
-          cerrarModales();
-        } else {
-          showToast(data.error, 'error');
-        }
-      } catch(e) {
-        showToast('Error: ' + e.message, 'error');
-      }
+      enviarAccionServidor(doc, nuevoEstado, null, null);
     }
 
-    async function actualizarObsDesdeDetalle(doc) {
+    async function actualizarOrdenYEstado(doc) {
+      const nuevoEstado = document.getElementById('detalleNuevoEstado').value;
+      const nuevoNroOrden = document.getElementById('detalleNroOrden').value;
+      enviarAccionServidor(doc, nuevoEstado, null, nuevoNroOrden);
+    }
+
+    async function actualizarObs(doc) {
       const nuevaObs = document.getElementById('detalleObs').value;
+      enviarAccionServidor(doc, null, nuevaObs, null);
+    }
+
+    async function enviarAccionServidor(doc, estado, obs, nroOrden) {
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: null, obs: nuevaObs, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
-          showToast("Observación guardada correctamente");
+          showToast("Actualizado correctamente");
           cargarVentas();
-        } else {
-          showToast(data.error, 'error');
-        }
-      } catch(e) {
-        showToast('Error: ' + e.message, 'error');
-      }
+        } else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error: ' + e.message, 'error'); }
     }
 
     async function guardarNuevaVenta() {
@@ -754,17 +742,9 @@
       const doc = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
       const nombre = document.getElementById('vNombre').value.trim();
       const apellido = document.getElementById('vApellido').value.trim();
-      if(!doc || !nombre || !apellido) {
-        showToast('Completá Documento, Nombre y Apellido', 'error');
-        return;
-      }
-      const file = document.getElementById('vArchivo').files[0];
-      if(file && file.size > 10*1024*1024) {
-        showToast('El archivo no puede superar 10MB', 'error');
-        return;
-      }
-      btn.innerText = "Guardando...";
-      btn.disabled = true;
+      if(!doc || !nombre || !apellido) { showToast('Completá Documento, Nombre y Apellido', 'error'); return; }
+
+      btn.innerText = "Guardando..."; btn.disabled = true;
       const metodo = document.getElementById('vMetodoPago').value;
       const datosTarjetaVal = metodo === 'TARJETA' ? `${document.getElementById('vMarcaTarjeta').value} - ${document.getElementById('vDatosTarjeta').value}` : 'EFECTIVO';
 
@@ -774,8 +754,7 @@
         producto: document.getElementById('vProducto').value,
         documento: doc,
         nacimiento: document.getElementById('vNac').value,
-        nombre: nombre,
-        apellido: apellido,
+        nombre: nombre, apellido: apellido,
         telTitular: document.getElementById('vTel1').value,
         telAlt: document.getElementById('vTel2').value,
         telTot: document.getElementById('vTelTot').value,
@@ -787,10 +766,12 @@
         cluster: document.getElementById('vCluster').value,
         cash: document.getElementById('vCash').value,
         tv: document.getElementById('vTV').value,
-        metodoPago: metodo,
-        datosTarjeta: datosTarjetaVal,
+        metodoPago: metodo, datosTarjeta: datosTarjetaVal,
         tipoLinea: document.getElementById('vCampaña').value === 'Movistar Portabilidad'? document.getElementById('vTipoLinea').value : null
       };
+
+      // Recopilar hasta 3 archivos si existen
+      const files = [document.getElementById('vArchivo1').files[0], document.getElementById('vArchivo2').files[0], document.getElementById('vArchivo3').files[0]].filter(Boolean);
 
       const enviar = async (datos) => {
         try {
@@ -799,41 +780,31 @@
             body: JSON.stringify({action: 'guardarVenta', userEmail: usuarioActual.email, data: datos})
           });
           const result = await res.json();
-          btn.innerText = "Guardar";
-          btn.disabled = false;
+          btn.innerText = "Guardar"; btn.disabled = false;
           if(result.success) {
-            showToast(result.msg);
-            cerrarModales();
-            cargarVentas();
-          } else {
-            showToast(result.error, 'error');
-          }
+            showToast(result.msg); cerrarModales(); cargarVentas();
+          } else { showToast(result.error, 'error'); }
         } catch(err) {
-          btn.innerText = "Guardar";
-          btn.disabled = false;
+          btn.innerText = "Guardar"; btn.disabled = false;
           showToast('Error: ' + err.message, 'error');
         }
       };
 
-      if (file) {
+      if(files.length > 0) {
         const reader = new FileReader();
         reader.onload = function(e) {
           d.archivoData = e.target.result;
-          d.archivoNombre = file.name;
+          d.archivoNombre = files[0].name;
           enviar(d);
         };
-        reader.readAsDataURL(file);
-      } else {
-        enviar(d);
-      }
+        reader.readAsDataURL(files[0]);
+      } else { enviar(d); }
     }
 
     function limpiarFormVenta() {
-      ['vBuscarDNI','vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vDatosTarjeta'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.value = '';
+      ['vBuscarDNI','vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.value = '';
       });
-      document.getElementById('vArchivo').value = '';
       document.getElementById('vCampaña').selectedIndex = 0;
       document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
       document.getElementById('vProv').selectedIndex = 0;
@@ -842,157 +813,36 @@
       document.getElementById('vTipoLineaContainer').style.display = 'none';
     }
 
-    async function cargarUsuarios() {
-      try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email})
-        });
-        const data = await res.json();
-        llenarUsuarios(data);
-      } catch(err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    function llenarUsuarios(data) {
-      const tbody = document.getElementById('tablaUsuarios');
-      if(!data.success) {
-        tbody.innerHTML = `<tr><td colspan='7' style='text-align:center;padding:40px;color:var(--accent)'>${data.error}</td></tr>`;
-        return;
-      }
-      if(data.rows.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin usuarios</td></tr>";
-        return;
-      }
-      tbody.innerHTML = data.rows.map(r => {
-        let btnStr = `<button onclick="editarUser('${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}','${r[5]}')" class="nb-btn nb-btn-sm">Editar</button>`;
-        let badgeColor = r[5] === 'ACTIVO'? 'nb-badge-green' : 'nb-badge-red';
-        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
-      }).join('');
-    }
-
-    function abrirModalUsuario() {
-      document.getElementById('uTitulo').innerText = "○ CREAR USUARIO";
-      document.getElementById('uOriginal').value = "";
-      document.getElementById('uNombre').value = "";
-      document.getElementById('uUser').value = "";
-      document.getElementById('uPass').value = "";
-      document.getElementById('uLeader').value = "";
-      document.getElementById('modalUsuario').style.display = 'flex';
-    }
-
-    function editarUser(nombre, user, rol, leader, turno, estado) {
-      document.getElementById('uTitulo').innerText = "○ EDITAR USUARIO";
-      document.getElementById('uOriginal').value = user;
-      document.getElementById('uNombre').value = nombre;
-      document.getElementById('uUser').value = user;
-      document.getElementById('uPass').value = "";
-      document.getElementById('uPass').placeholder = "Dejar vacío para no cambiar";
-      document.getElementById('uRol').value = rol;
-      document.getElementById('uLeader').value = leader;
-      document.getElementById('uTurno').value = turno;
-      document.getElementById('uEstado').value = estado;
-      document.getElementById('modalUsuario').style.display = 'flex';
-    }
-
-    async function procesarUsuario() {
-      const original = document.getElementById('uOriginal').value;
-      const data = {
-        nombre: document.getElementById('uNombre').value,
-        usuario: document.getElementById('uUser').value,
-        pass: document.getElementById('uPass').value,
-        rol: document.getElementById('uRol').value,
-        teamLeader: document.getElementById('uLeader').value,
-        turno: document.getElementById('uTurno').value,
-        estado: document.getElementById('uEstado').value
-      };
-
-      if(!data.nombre || !data.usuario) {
-        showToast('Completá Nombre y Email', 'error');
-        return;
-      }
-
-      try {
-        const action = original ? 'editarUsuarioGS' : 'guardarUsuario';
-        const body = original ? {action, userEmail: usuarioActual.email, originalEmail: original, data} : {action, userEmail: usuarioActual.email, data};
-        
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify(body)
-        });
-        const result = await res.json();
-        
-        if(result.success) {
-          showToast(result.msg);
-          cerrarModales();
-          cargarUsuarios();
-        } else {
-          showToast(result.error, 'error');
-        }
-      } catch(e) {
-        showToast('Error: ' + e.message, 'error');
-      }
-    }
-
     async function cargarReportes() {
       const mesFiltro = document.getElementById('filtroMes').value;
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro})
-        });
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro}) });
         const data = await res.json();
-        mostrarReportes(data);
-      } catch(err) {
-        showToast(err.message, 'error');
-      }
+        if(data.success) {
+          document.getElementById('repMesActual').textContent = mesFiltro || '-';
+          document.getElementById('repUltimaAct').textContent = data.fechaActualizacion || '-';
+          document.getElementById('repInstaladas').textContent = data.instaladas || 0;
+          document.getElementById('repClusterC').textContent = data.clusterC || 0;
+          document.getElementById('repCash').textContent = data.cash || 0;
+          document.getElementById('repCancelado').textContent = data.cancelado || 0;
+          document.getElementById('repPendientes').textContent = data.pendientes || 0;
+          document.getElementById('repTV').textContent = data.tvCumplidas || 0;
+        }
+      } catch(err) { showToast(err.message, 'error'); }
     }
 
-    function mostrarReportes(data) {
-      if(!data.success) {
-        showToast(data.error, 'error');
-        return;
-      }
-      
-      document.getElementById('repMesActual').textContent = document.getElementById('filtroMes').value || '-';
-      document.getElementById('repUltimaAct').textContent = data.fechaActualizacion || '-';
-      document.getElementById('repInstaladas').textContent = data.instaladas || 0;
-      document.getElementById('repClusterC').textContent = data.clusterC || 0;
-      document.getElementById('repCash').textContent = data.cash || 0;
-      document.getElementById('repCancelado').textContent = data.cancelado || 0;
-      document.getElementById('repPendientes').textContent = data.pendientes || 0;
-      document.getElementById('repTV').textContent = data.tvCumplidas || 0;
-      document.getElementById('repFibra').textContent = data.fibra || 0;
-      document.getElementById('repPorta').textContent = data.portabilidad || 0;
-      document.getElementById('repMovil').textContent = data.altaMovil || 0;
-      document.getElementById('repMetodoEfectivo').textContent = data.metodoPago?.efectivo || 0;
-      document.getElementById('repMetodoTarjeta').textContent = data.metodoPago?.tarjeta || 0;
-      document.getElementById('repClusterA').textContent = data.clusters?.A || 0;
-      document.getElementById('repClusterB').textContent = data.clusters?.B || 0;
-      document.getElementById('repClusterC2').textContent = data.clusters?.C || 0;
-      document.getElementById('repClusterD').textContent = data.clusters?.D || 0;
-      
-      const tbody = document.getElementById('tablaRanking');
-      if(!data.ranking || data.ranking.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--ink-soft)">Sin datos</td></tr>';
-        return;
-      }
-      
-      tbody.innerHTML = data.ranking.map(r => `
-        <tr>
-          <td>${r.vendedor || ''}</td>
-          <td>${r.cumplidas || 0}</td>
-          <td>${r.fibra || 0}</td>
-          <td>${r.porta || 0}</td>
-          <td>${r.movil || 0}</td>
-          <td>${r.canceladas || 0}</td>
-          <td>${r.cash || 0}</td>
-          <td>${r.clusterC || 0}</td>
-          <td>${r.tv || 0}</td>
-        </tr>
-      `).join('');
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email}) });
+        const data = await res.json();
+        const tbody = document.getElementById('tablaUsuarios');
+        if(data.success) {
+          tbody.innerHTML = data.rows.map(r => `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>-</td></tr>`).join('');
+        }
+      } catch(err) { showToast(err.message, 'error'); }
     }
+
+    function abrirModalUsuario() { document.getElementById('modalUsuario').style.display = 'flex'; }
   </script>
 </body>
 </html>
