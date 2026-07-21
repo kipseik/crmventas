@@ -100,7 +100,7 @@
         <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
         <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Pipeline</a>
         <a class="nb-nav-link" onclick="navTo('sec-reportes', this)">📊 Reportes</a>
-        <a class="nb-nav-link" onclick="navTo('sec-config', this)" id="linkConfig" style="display:none">⚙️ Campañas</a>
+        <a class="nb-nav-link" onclick="navTo('sec-config', this)" id="linkConfig" style="display:none">⚙️ Campañas & Compañías</a>
         <a class="nb-nav-link" onclick="navTo('sec-usuarios', this)" id="linkUsuarios" style="display:none">Usuarios</a>
       </div>
       <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
@@ -244,24 +244,22 @@
         </div>
       </div>
 
-      <!-- SECCIÓN CONFIGURACIÓN CAMPAÑAS, PRODUCTOS Y AGENTE (ADMIN) -->
+      <!-- SECCIÓN CONFIGURACIÓN CAMPAÑAS, PRODUCTOS Y COMPAÑÍA (ADMIN) -->
       <div id="sec-config" class="page-section" style="display: none;">
         <div class="nb-window" style="background: #1e1e1e; padding: 16px; margin-bottom: 16px;">
-          <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">⚙️ GESTIÓN DE CAMPAÑAS, PRODUCTOS Y AGENTES</div>
+          <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">⚙️ GESTIÓN DE CAMPAÑAS, PRODUCTOS Y COMPAÑÍA</div>
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 150px; gap: 10px; align-items: end; font-size: 11px; margin-bottom: 15px;">
             <div>
               <label style="display:block; margin-bottom:4px;">Nombre de Campaña</label>
-              <input type="text" id="cfgCampana" placeholder="Ej: Movistar Negocios" class="nb-input">
+              <input type="text" id="cfgCampana" placeholder="Ej: Movistar Fibra" class="nb-input">
             </div>
             <div>
               <label style="display:block; margin-bottom:4px;">Nombre de Producto</label>
-              <input type="text" id="cfgProducto" placeholder="Ej: 500 Megas" class="nb-input">
+              <input type="text" id="cfgProducto" placeholder="Ej: 300 Megas" class="nb-input">
             </div>
             <div>
-              <label style="display:block; margin-bottom:4px;">Agente Asignado</label>
-              <select id="cfgAgente" class="nb-select">
-                <option value="Todos">Todos (General)</option>
-              </select>
+              <label style="display:block; margin-bottom:4px;">Compañía / Proveedor</label>
+              <input type="text" id="cfgCompania" placeholder="Ej: Movistar, DirecTV, Seguros" class="nb-input">
             </div>
             <div>
               <button onclick="agregarCampanaProducto()" class="nb-btn nb-btn-primary" style="width:100%; font-weight:bold;">+ Agregar</button>
@@ -269,7 +267,7 @@
           </div>
           <div style="overflow-x: auto;">
             <table class="nb-table">
-              <thead><tr><th>Campaña</th><th>Producto Asociado</th><th>Agente Asignado</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Campaña</th><th>Producto Asociado</th><th>Compañía / Proveedor</th><th>Acciones</th></tr></thead>
               <tbody id="tablaConfigCampanas"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
@@ -671,7 +669,7 @@
       try {
         const res = await fetch(GAS_URL, { 
           method: 'POST', 
-          body: JSON.stringify({ action: 'getConfigCampanas', userEmail: usuarioActual ? usuarioActual.email : '' }) 
+          body: JSON.stringify({ action: 'getConfigCampanas' }) 
         });
         const data = await res.json();
         if(data.success) {
@@ -726,12 +724,12 @@
         if(data.success) {
           let rowsHTML = '';
           data.rawRows.forEach(r => {
-            let agenteAsig = r[2] || 'Todos';
+            let companiaVal = r[2] || '-';
             rowsHTML += `<tr>
               <td><strong>${r[0]}</strong></td>
               <td>${r[1]}</td>
-              <td><span class="nb-badge nb-badge-blue">${agenteAsig}</span></td>
-              <td><button onclick="eliminarCampanaProducto('${r[0]}', '${r[1]}', '${agenteAsig}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
+              <td><span class="nb-badge nb-badge-blue">${companiaVal}</span></td>
+              <td><button onclick="eliminarCampanaProducto('${r[0]}', '${r[1]}', '${companiaVal}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
             </tr>`;
           });
           tbody.innerHTML = rowsHTML || "<tr><td colspan='4' style='text-align:center;'>Sin campañas configuradas</td></tr>";
@@ -742,31 +740,32 @@
     async function agregarCampanaProducto() {
       const camp = document.getElementById('cfgCampana').value.trim();
       const prod = document.getElementById('cfgProducto').value.trim();
-      const agente = document.getElementById('cfgAgente').value;
+      const compania = document.getElementById('cfgCompania').value.trim() || 'General';
       if(!camp || !prod) { showToast('Completá campaña y producto', 'error'); return; }
 
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod, agente: agente}, adminEmail: usuarioActual.email })
+          body: JSON.stringify({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod, compania: compania}, adminEmail: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
           showToast(data.msg);
           document.getElementById('cfgCampana').value = '';
           document.getElementById('cfgProducto').value = '';
+          document.getElementById('cfgCompania').value = '';
           cargarConfigCampanas();
           cargarTablaConfigCampanas();
         } else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al guardar', 'error'); }
     }
 
-    async function eliminarCampanaProducto(camp, prod, agente) {
-      if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}" (${agente})?`)) return;
+    async function eliminarCampanaProducto(camp, prod, compania) {
+      if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}" (${compania})?`)) return;
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'eliminarConfigCampana', campana: camp, producto: prod, agente: agente, adminEmail: usuarioActual.email })
+          body: JSON.stringify({ action: 'eliminarConfigCampana', campana: camp, producto: prod, compania: compania, adminEmail: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
@@ -815,10 +814,6 @@
           const loteImportSel = document.getElementById('loteDestinoVendedor');
           if(loteImportSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
             loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
-          }
-          const cfgAgenteSel = document.getElementById('cfgAgente');
-          if(cfgAgenteSel) {
-            cfgAgenteSel.innerHTML = '<option value="Todos">Todos (General)</option>' + todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
           }
         }
       } catch(e) {}
@@ -1162,7 +1157,7 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN, LEADS EN FRÍO Y DESCARTE CON COORDENADAS OBLIGATORIAS
+    // GESTIÓN DE AGENDA, KANBAN Y DESCARTE CON COORDENADAS OBLIGATORIAS
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
