@@ -68,11 +68,14 @@
     .kanban-card { background: #262626; border: 1px solid #444; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 11px; transition: transform 0.1s; }
     .kanban-card:hover { border-color: var(--primary); transform: translateY(-2px); }
 
-    .report-box { background: white; border: 1px solid #333; border-radius: 4px; padding: 12px; text-align: center; }
-    .report-box-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
-    .report-box-value { font-size: 32px; font-weight: 900; color: #1e40af; }
-    .report-header { background: var(--blue-header); color: white; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-    .report-section { background: var(--teal-bg); padding: 16px; border-radius: 6px; margin-bottom: 16px; }
+    /* NUEVOS ESTILOS PARA ESTILO CLÁSICO DE REPORTES */
+    .rep-container { background: #0f766e; padding: 16px; border-radius: 6px; color: #fff; margin-bottom: 16px; }
+    .rep-header-bar { background: #1e40af; color: #fff; padding: 8px 12px; font-weight: bold; font-size: 12px; text-transform: uppercase; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+    .rep-grid-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: #e0e0e0; gap: 2px; padding: 2px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
+    .rep-box { background: #f0f0f0; padding: 10px; text-align: center; color: #000; }
+    .rep-box-title { font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 4px; }
+    .rep-box-val { font-size: 22px; font-weight: 900; color: #1e40af; }
+    .rep-box-sub { font-size: 9px; color: #666; margin-top: 2px; }
 
     .loader { border: 3px solid var(--surface-2); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -274,7 +277,7 @@
         </div>
       </div>
 
-      <!-- SECCIÓN REPORTES CON FILTRADO FLEXIBLE (MES, DÍA, RANGO) -->
+      <!-- SECCIÓN REPORTES ESTILO CLÁSICO DETALLADO -->
       <div id="sec-reportes" class="page-section" style="display: none;">
         <div class="nb-window">
           <div class="nb-titlebar"><span class="nb-dot green"></span>Filtros de Reporte</div>
@@ -307,23 +310,104 @@
           </div>
         </div>
 
-        <div class="report-section">
-          <div class="report-header">PERÍODO: <span id="repMesActual">-</span> | ACT: <span id="repUltimaAct">-</span></div>
-          <div class="nb-grid-6" style="margin-top: 12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-            <div class="report-box"><div class="report-box-label">INSTALADAS</div><div class="report-box-value" id="repInstaladas">-</div></div>
-            <div class="report-box"><div class="report-box-label">CLUSTER C</div><div class="report-box-value" id="repClusterC">-</div></div>
-            <div class="report-box"><div class="report-box-label">CASH</div><div class="report-box-value" id="repCash">-</div></div>
-            <div class="report-box"><div class="report-box-label">CANCELADO</div><div class="report-box-value" id="repCancelado">-</div></div>
-            <div class="report-box"><div class="report-box-label">PENDIENTES</div><div class="report-box-value" id="repPendientes">-</div></div>
+        <!-- BLOQUE OPERATIVO 1: PRINCIPALES -->
+        <div class="rep-container">
+          <div class="rep-header-bar" id="repHeaderTitulo">OPERATIVO — CARGANDO...</div>
+          <div class="rep-grid-boxes">
+            <div class="rep-box">
+              <div class="rep-box-title">INSTALADAS</div>
+              <div class="rep-box-val" id="repInstaladas">-</div>
+            </div>
+            <div class="rep-box">
+              <div class="rep-box-title">CLUSTER C (FIBRA)</div>
+              <div class="rep-box-val" id="repClusterCVal">-</div>
+              <div class="rep-box-sub" id="repClusterCPct">-</div>
+            </div>
+            <div class="rep-box">
+              <div class="rep-box-title">CASH (EFECTIVO)</div>
+              <div class="rep-box-val" id="repCashVal">-</div>
+              <div class="rep-box-sub" id="repCashPct">-</div>
+            </div>
+            <div class="rep-box">
+              <div class="rep-box-title">CANCELADO</div>
+              <div class="rep-box-val" id="repCanceladoVal" style="color:var(--accent);">-</div>
+              <div class="rep-box-sub" id="repCanceladoPct">-</div>
+            </div>
+            <div class="rep-box">
+              <div class="rep-box-title">PENDIENTES (FIBRA)</div>
+              <div class="rep-box-val" id="repPendientes" style="color:#d97706;">-</div>
+              <div class="rep-box-sub">con orden · PACES</div>
+            </div>
+            <div class="rep-box">
+              <div class="rep-box-title">TV CUMPLIDAS</div>
+              <div class="rep-box-val" id="repTvVal">-</div>
+              <div class="rep-box-sub" id="repTvPct">-</div>
+            </div>
           </div>
         </div>
 
+        <!-- BLOQUE OPERATIVO 2: PRODUCTOS, PAGOS, CLUSTERS Y VELOCIDADES -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          
+          <!-- Cumplidas por Producto -->
+          <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 6px; overflow: hidden;">
+            <div style="background: #1e40af; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">Cumplidas del Período por Producto</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: #333; padding: 2px; text-align: center;">
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">FIBRA</div><div style="font-size: 20px; font-weight: bold; color: #1e40af;" id="repFibra">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">PORTABILIDAD</div><div style="font-size: 20px; font-weight: bold; color: #1e40af;" id="repPorta">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">ALTA MÓVIL</div><div style="font-size: 20px; font-weight: bold; color: #1e40af;" id="repMovil">-</div></div>
+            </div>
+          </div>
+
+          <!-- Método de Pago -->
+          <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 6px; overflow: hidden;">
+            <div style="background: #1e40af; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">Método de Pago (Fibra)</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; background: #333; padding: 2px; text-align: center;">
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">CASH (EFECTIVO)</div><div style="font-size: 20px; font-weight: bold; color: #ef4444;" id="repPagoCash">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">TARJETA (CRÉDITO)</div><div style="font-size: 20px; font-weight: bold; color: #1e40af;" id="repPagoTarjeta">-</div></div>
+            </div>
+          </div>
+
+          <!-- Cluster (Fibra) -->
+          <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 6px; overflow: hidden;">
+            <div style="background: #1e40af; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">Cluster (Fibra)</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: #333; padding: 2px; text-align: center;">
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">A</div><div style="font-size: 18px; font-weight: bold; color: #1e40af;" id="repClusterA">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">B</div><div style="font-size: 18px; font-weight: bold; color: #1e40af;" id="repClusterB">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">C</div><div style="font-size: 18px; font-weight: bold; color: #ef4444;" id="repClusterCBox">-</div></div>
+              <div style="background: #f0f0f0; padding: 10px; color:#000;"><div style="font-size: 9px; font-weight:bold; color:#555;">D</div><div style="font-size: 18px; font-weight: bold; color: #1e40af;" id="repClusterD">-</div></div>
+            </div>
+          </div>
+
+          <!-- Velocidades - Fibra Cumplidas por Plan -->
+          <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 6px; overflow: hidden;">
+            <div style="background: #1e40af; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">Velocidades — Fibra Cumplidas por Plan</div>
+            <div style="background: #f0f0f0; padding: 8px; color: #000; font-size: 11px;" id="contenedorVelocidades">
+              <!-- Renderizado dinámico -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RANKING POR VENDEDOR -->
         <div class="nb-window">
-          <div class="nb-titlebar"><span class="nb-dot yellow"></span>RANKING Y CANTIDAD DE VENTAS POR VENDEDOR</div>
+          <div class="nb-titlebar" style="background: #1e40af; color: white;">🏆 RANKING POR VENDEDOR — CUMPLIDAS · FIBRA · PORTA · MÓVIL · CANCELADAS · CASH · CLUSTER C · TV</div>
           <div style="overflow-x: auto;">
             <table class="nb-table">
-              <thead><tr><th>VENDEDOR</th><th>CUMPLIDAS (INSTALADAS)</th><th>FIBRA</th><th>PORTA</th><th>MÓVIL</th><th>CANCELADAS</th><th>CASH</th></tr></thead>
-              <tbody id="tablaRanking"><tr><td colspan="7"><div class="loader"></div></td></tr></tbody>
+              <thead>
+                <tr>
+                  <th>VENDEDOR</th>
+                  <th>CUMPLIDAS</th>
+                  <th>FIBRA</th>
+                  <th>PORTA</th>
+                  <th>MÓVIL</th>
+                  <th>CANCELADAS</th>
+                  <th>CASH</th>
+                  <th>CLUSTER C</th>
+                  <th>TV</th>
+                </tr>
+              </thead>
+              <tbody id="tablaRanking"><tr><td colspan="9" style="text-align:center;"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -646,6 +730,16 @@
         
         cargarListaUsuariosGlobales();
       }
+      
+      // Inicializar por defecto el mes actual en el input de mes
+      const hoy = new Date();
+      const anio = hoy.getFullYear();
+      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+      const inputMes = document.getElementById('filtroMes');
+      if(inputMes && !inputMes.value) {
+        inputMes.value = `${anio}-${mes}`;
+      }
+
       cargarConfigCampanas();
       cargarVentas();
       cargarAgenda();
@@ -1606,33 +1700,101 @@
         });
         const data = await res.json();
         if(data.success) {
-          let etiquetaTexto = 'General';
-          if(tipoFiltro === 'mes') etiquetaTexto = mesFiltro || 'Mes Actual';
-          else if(tipoFiltro === 'dia') etiquetaTexto = diaFiltro || 'Día Específico';
-          else if(tipoFiltro === 'rango') etiquetaTexto = `${desdeFiltro || 'Inicio'} al ${hastaFiltro || 'Fin'}`;
+          let etiquetaPeriodo = 'OPERATIVO';
+          if(tipoFiltro === 'mes' && mesFiltro) {
+            let partesMes = mesFiltro.split('-');
+            const mesesNombres = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+            etiquetaPeriodo = `OPERATIVO — ${mesesNombres[parseInt(partesMes[1])-1]} ${partesMes[0]}`;
+          } else if(tipoFiltro === 'dia' && diaFiltro) {
+            etiquetaPeriodo = `OPERATIVO — DÍA ${diaFiltro}`;
+          } else if(tipoFiltro === 'rango') {
+            etiquetaPeriodo = `OPERATIVO — DESDE ${desdeFiltro || 'INICIO'} HASTA ${hastaFiltro || 'FIN'}`;
+          } else {
+            etiquetaPeriodo = 'OPERATIVO — GENERAL';
+          }
 
-          setText('repMesActual', etiquetaTexto);
-          setText('repUltimaAct', data.fechaActualizacion || '-');
-          setText('repInstaladas', data.instaladas || 0);
-          setText('repClusterC', data.clusterC || 0);
-          setText('repCash', data.cash || 0);
-          setText('repCancelado', data.cancelado || 0);
-          setText('repPendientes', data.pendientes || 0);
+          setText('repHeaderTitulo', `${etiquetaPeriodo} · ÚLTIMA ACTUALIZACIÓN ${data.fechaActualizacion}`);
+          setText('repUltimaAct', data.fechaActualizacion);
+          setText('repInstaladas', data.instaladas);
 
+          // Cluster C
+          let pctClusterC = data.instaladas > 0 ? ((data.clusterCCount / data.instaladas) * 100).toFixed(1) : '0';
+          setText('repClusterCVal', data.clusterCCount);
+          setText('repClusterCPct', `de ${data.instaladas} fibra cumplidas · obj ≤10%`);
+
+          // Cash
+          let pctCash = data.instaladas > 0 ? ((data.cashCount / data.instaladas) * 100).toFixed(1) : '0';
+          setText('repCashVal', data.cashCount);
+          setText('repCashPct', `de ${data.instaladas} fibra cumplidas · obj ≤10%`);
+
+          // Cancelado
+          let pctCancelado = data.totalIngresadas > 0 ? ((data.cancelado / data.totalIngresadas) * 100).toFixed(1) : '0';
+          setText('repCanceladoVal', data.cancelado);
+          setText('repCanceladoPct`, `de ${data.totalIngresadas} ingresadas · PACES`);
+
+          // Pendientes
+          setText('repPendientes', data.pendientes);
+
+          // TV Cumplidas
+          let pctTv = data.instaladas > 0 ? ((data.tvCumplidas / data.instaladas) * 100).toFixed(1) : '0';
+          setText('repTvVal', data.tvCumplidas);
+          setText('repTvPct', `de ${data.instaladas} fibra · obj ≥35%`);
+
+          // Productos
+          setText('repFibra', data.fibraCount);
+          setText('repPorta', data.portaCount);
+          setText('repMovil', data.movilCount);
+
+          // Métodos de Pago
+          setText('repPagoCash', data.cashCount);
+          setText('repPagoTarjeta', data.tarjetaCount);
+
+          // Clusters
+          setText('repClusterA', data.clusters.A);
+          setText('repClusterB', data.clusters.B);
+          setText('repClusterCBox', data.clusterCCount);
+          setText('repClusterD', data.clusters.D);
+
+          // Velocidades por Plan
+          const contVel = document.getElementById('contenedorVelocidades');
+          if(contVel) {
+            let totalFibra = data.fibraCount > 0 ? data.fibraCount : 1;
+            let htmlVel = '';
+            for(let plan in data.velocidades) {
+              let cant = data.velocidades[plan];
+              let pct = ((cant / totalFibra) * 100).toFixed(1);
+              let anchoBarra = Math.min(100, Math.max(2, (cant / totalFibra) * 100));
+              htmlVel += `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font-size: 11px;">
+                  <span style="width: 80px; font-weight: bold;">${plan}</span>
+                  <div style="flex: 1; margin: 0 10px; background: #ddd; height: 12px; border-radius: 2px; overflow: hidden;">
+                    <div style="background: #1e40af; height: 100%; width: ${anchoBarra}%;"></div>
+                  </div>
+                  <span style="width: 30px; text-align: right; font-weight: bold;">${cant}</span>
+                  <span style="width: 45px; text-align: right; color: #555; font-size: 10px;">${pct}%</span>
+                </div>
+              `;
+            }
+            contVel.innerHTML = htmlVel;
+          }
+
+          // Tabla Ranking
           const tbody = document.getElementById('tablaRanking');
           if(!tbody) return;
           if(data.ranking.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Sin datos para este período</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>Sin datos para este período</td></tr>";
           } else {
             tbody.innerHTML = data.ranking.map(r => `
               <tr>
                 <td><strong>${r.vendedor}</strong></td>
-                <td>${r.cumplidas}</td>
+                <td><b>${r.cumplidas}</b></td>
                 <td>${r.fibra}</td>
                 <td>${r.porta}</td>
                 <td>${r.movil}</td>
-                <td>${r.canceladas}</td>
+                <td style="color: ${r.canceladas > 0 ? '#ef4444' : 'inherit'};">${r.canceladas}</td>
                 <td>${r.cash}</td>
+                <td>${r.clusterC}</td>
+                <td>${r.tv}</td>
               </tr>
             `).join('');
           }
