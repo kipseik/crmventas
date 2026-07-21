@@ -59,11 +59,11 @@
     .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); }
     .nb-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
 
-    .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+    .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; display: inline-block; }
     .nb-badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
     .nb-badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
     .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
-    .nb-badge-red { background: rgba(239, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
     .nb-badge-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
 
     .nb-grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
@@ -83,7 +83,7 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .toast { position: fixed; top: 70px; right: 20px; background: var(--surface-2); padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--primary); z-index: 9999; animation: slideIn 0.3s; max-width: 400px; }
     @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
-    .error-box { background: rgba(239, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
+    .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
 
     @media(max-width:768px){.nb-table { font-size: 10px; }.nb-nav-links { overflow-x: auto; } }
   </style>
@@ -360,7 +360,7 @@
           </div>
 
          <input type="hidden" id="vCampañaDet" value="FIBRA">
-                </div>
+        </div>
 
         <div style="margin-top: 10px; padding: 8px; border: 1px solid #444; background: #0a0a0a;">
           <label style="font-size: 11px; color: #3b82f6;">📎 ADJUNTAR ARCHIVO (Máx 10MB)</label>
@@ -405,9 +405,10 @@
   </div>
 
   <script>
-     // ========== CONFIGURACIÓN ==========
+    // ========== CONFIGURACIÓN ==========
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';
     // =========================================================
+
     let todasLasVentas = [];
     let usuarioActual = null;
     let filtroTimeout = null;
@@ -418,6 +419,7 @@
 
     function safeLower(v) {
       return (v || '').toString().toLowerCase();
+    }
 
     async function hacerLogin() {
       const email = document.getElementById('loginEmail').value.trim();
@@ -425,7 +427,7 @@
       const btn = document.getElementById('btnLogin');
       const err = document.getElementById('loginError');
 
-      if(!email ||!pass) {
+      if(!email || !pass) {
         err.textContent = 'Completá email y contraseña';
         return;
       }
@@ -448,7 +450,7 @@
 
         if(data.success) {
           usuarioActual = data.user;
-          sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+          localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
           mostrarApp();
         } else {
           err.textContent = data.error;
@@ -462,14 +464,14 @@
     }
 
     function cerrarSesion() {
-      sessionStorage.removeItem('paces_user');
+      localStorage.removeItem('paces_user');
       location.reload();
     }
 
     function mostrarApp() {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
-      const userData = JSON.parse(sessionStorage.getItem('paces_user'));
+      const userData = JSON.parse(localStorage.getItem('paces_user'));
       usuarioActual = userData;
       document.getElementById('userInfo').textContent = `${usuarioActual.nombre} | ${usuarioActual.rol}`;
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
@@ -542,7 +544,7 @@
     }
 
     window.onload = function() {
-      const savedUser = sessionStorage.getItem('paces_user');
+      const savedUser = localStorage.getItem('paces_user');
       if(savedUser) {
         mostrarApp();
       }
@@ -640,52 +642,52 @@
       const r = todasLasVentas[idx];
       ventaActualDetalle = r;
       const html = `
-        <div class="nb-modal" style="max-width: 1180px; width: 96vw;">
+        <div class="nb-window" style="max-width: 1180px; width: 96vw; background: var(--surface);">
           <div class="nb-titlebar" style="justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="nb-dot green"></span>
               <span>${r[3]} ${r[4]}</span>
               <span class="nb-badge nb-badge-gray" style="margin-left: 4px;">DNI: ${r[2]}</span>
             </div>
-            <button onclick="cerrarModales()" style="background: none; border: 1px solid rgba(245, 240, 232, 0.4); color: var(--surface); cursor: pointer; padding: 2px 8px; font-family: var(--font-mono); font-size: 12px;">✕</button>
+            <button onclick="cerrarModales()" style="background: none; border: 1px solid rgba(245, 240, 232, 0.4); color: var(--ink); cursor: pointer; padding: 2px 8px; font-family: var(--font-mono); font-size: 12px;">✕</button>
           </div>
           <div style="background: var(--surface-2); border-bottom: var(--border); padding: 6px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft);">ESTADO ACTUAL:</span>
             <span class="nb-badge ${r[7] === 'CUMPLIDA'? 'nb-badge-green' : r[7].includes('CANCELADA')? 'nb-badge-red' : 'nb-badge-blue'}">${r[7]}</span>
           </div>
-          <div class="nb-modal-body" style="max-height: 80vh; overflow-y: auto;">
+          <div style="max-height: 80vh; overflow-y: auto; padding: 16px;">
             <div style="border: var(--border-bold); background: var(--surface-2); padding: 10px 12px; margin: 0px 0px 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
                 <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px;">🧩 Productos de esta orden (1)</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 6px;">
-                <button type="button" style="text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 9px; border: 2px solid var(--primary); background: var(--surface); width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 9px; border: 2px solid var(--primary); background: var(--surface); width: 100%;">
                   <span style="font-weight: 700; font-size: 13px;">${r[6]}</span>
                   <span style="font-size: 10px; font-family: var(--font-mono); color: var(--ink-soft);">(principal)</span>
                   <span class="nb-badge nb-badge-blue" style="font-size: 10px;">${r[7]}</span>
                   <span style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
                     <span style="font-size: 11px; color: var(--ink-soft);">${r[5]}</span>
-                    <span style="font-size: 10px; background: var(--primary); color: var(--surface); padding: 1px 6px; font-family: var(--font-mono);">ABIERTA</span>
+                    <span style="font-size: 10px; background: var(--primary); color: #fff; padding: 1px 6px; font-family: var(--font-mono);">ABIERTA</span>
                   </span>
-                </button>
+                </div>
               </div>
             </div>
             <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 4px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">● Detalle</div>
             <div class="nb-grid-2">
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Campaña</div><div style="font-weight: 600; font-size: 13px;">${r[1]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Producto</div><div style="font-weight: 600; font-size: 13px;">${r[6]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Documento</div><div style="font-weight: 600; font-size: 13px;">DNI: ${r[2]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Nombre completo</div><div style="font-weight: 600; font-size: 13px;">${r[3]} ${r[4]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Fecha venta</div><div style="font-weight: 600; font-size: 13px;">${r[0]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Vendedor</div><div style="font-weight: 600; font-size: 13px;">${r[5]}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">NUMERO A TOTALIZAR</div><div style="font-weight: 600; font-size: 13px;">${r[16] || '-'}</div></div>
-              <div class="nb-inset" style="padding: 6px 10px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Observación</div><div style="font-weight: 600; font-size: 13px; white-space: pre-wrap;">${r[9] || '-'}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Campaña</div><div style="font-weight: 600; font-size: 13px;">${r[1]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Producto</div><div style="font-weight: 600; font-size: 13px;">${r[6]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Documento</div><div style="font-weight: 600; font-size: 13px;">DNI: ${r[2]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Nombre completo</div><div style="font-weight: 600; font-size: 13px;">${r[3]} ${r[4]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Fecha venta</div><div style="font-weight: 600; font-size: 13px;">${r[0]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Vendedor</div><div style="font-weight: 600; font-size: 13px;">${r[5]}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">NUMERO A TOTALIZAR</div><div style="font-weight: 600; font-size: 13px;">${r[16] || '-'}</div></div>
+              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Observación</div><div style="font-weight: 600; font-size: 13px; white-space: pre-wrap;">${r[9] || '-'}</div></div>
             </div>
             <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 22px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">📎 Adjuntos</div>
             <div>${r[10]? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver adjunto</a>` : '<p style="font-size: 13px; color: var(--ink-soft);">Sin adjuntos aún.</p>'}</div>
           </div>
-          <div class="nb-modal-footer" style="justify-content: space-between;">
-            <button class="nb-btn nb-btn-sm" onclick="cerrarModales()">✎ Cerrar</button>
+          <div style="padding: 10px 16px; background: var(--surface-2); border-top: var(--border); display: flex; justify-content: space-between;">
+            <button class="nb-btn nb-btn-sm" onclick="cerrarModales()">Cerrar</button>
           </div>
         </div>
       `;
@@ -698,7 +700,7 @@
       const doc = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
       const nombre = document.getElementById('vNombre').value.trim();
       const apellido = document.getElementById('vApellido').value.trim();
-      if(!doc ||!nombre ||!apellido) {
+      if(!doc || !nombre || !apellido) {
         showToast('Completá Documento, Nombre y Apellido', 'error');
         return;
       }
@@ -859,8 +861,6 @@
       document.getElementById('uEstado').value = estado;
       document.getElementById('modalUsuario').style.display = 'flex';
     }
-
-        }
 
     async function procesarUsuario() {
       const original = document.getElementById('uOriginal').value;
