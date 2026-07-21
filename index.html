@@ -274,21 +274,41 @@
         </div>
       </div>
 
-      <!-- SECCIÓN REPORTES -->
+      <!-- SECCIÓN REPORTES CON FILTRADO FLEXIBLE (MES, DÍA, RANGO) -->
       <div id="sec-reportes" class="page-section" style="display: none;">
         <div class="nb-window">
           <div class="nb-titlebar"><span class="nb-dot green"></span>Filtros de Reporte</div>
           <div class="nb-content">
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <label style="font-size:11px;color:var(--ink-soft);text-transform:uppercase">MES:</label>
-              <input type="month" id="filtroMes" class="nb-input" style="width: 200px;" onchange="cargarReportes()">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <label style="font-size:11px;color:var(--ink-soft);text-transform:uppercase">TIPO:</label>
+              <select id="tipoFiltroReporte" class="nb-select" style="width: 140px;" onchange="toggleTipoFiltroReporte()">
+                <option value="mes">Por Mes</option>
+                <option value="dia">Día Específico</option>
+                <option value="rango">Rango de Fechas</option>
+              </select>
+
+              <div id="contenedorFiltroMes" style="display: flex; gap: 8px; align-items: center;">
+                <input type="month" id="filtroMes" class="nb-input" style="width: 180px;">
+              </div>
+
+              <div id="contenedorFiltroDia" style="display: none; gap: 8px; align-items: center;">
+                <input type="date" id="filtroDia" class="nb-input" style="width: 180px;">
+              </div>
+
+              <div id="contenedorFiltroRango" style="display: none; gap: 8px; align-items: center;">
+                <span style="font-size: 11px;">Desde:</span>
+                <input type="date" id="filtroDesde" class="nb-input" style="width: 140px;">
+                <span style="font-size: 11px;">Hasta:</span>
+                <input type="date" id="filtroHasta" class="nb-input" style="width: 140px;">
+              </div>
+
               <button onclick="cargarReportes()" class="nb-btn nb-btn-primary nb-btn-sm">Actualizar</button>
             </div>
           </div>
         </div>
 
         <div class="report-section">
-          <div class="report-header">OPERATIVO — <span id="repMesActual">-</span> | ACT: <span id="repUltimaAct">-</span></div>
+          <div class="report-header">PERÍODO: <span id="repMesActual">-</span> | ACT: <span id="repUltimaAct">-</span></div>
           <div class="nb-grid-6" style="margin-top: 12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
             <div class="report-box"><div class="report-box-label">INSTALADAS</div><div class="report-box-value" id="repInstaladas">-</div></div>
             <div class="report-box"><div class="report-box-label">CLUSTER C</div><div class="report-box-value" id="repClusterC">-</div></div>
@@ -1558,13 +1578,40 @@
       } catch(e) { showToast('Error al convertir', 'error'); }
     }
 
+    function toggleTipoFiltroReporte() {
+      const tipo = document.getElementById('tipoFiltroReporte').value;
+      document.getElementById('contenedorFiltroMes').style.display = (tipo === 'mes') ? 'flex' : 'none';
+      document.getElementById('contenedorFiltroDia').style.display = (tipo === 'dia') ? 'flex' : 'none';
+      document.getElementById('contenedorFiltroRango').style.display = (tipo === 'rango') ? 'flex' : 'none';
+    }
+
     async function cargarReportes() {
+      const tipoFiltro = document.getElementById('tipoFiltroReporte').value;
       const mesFiltro = document.getElementById('filtroMes').value;
+      const diaFiltro = document.getElementById('filtroDia').value;
+      const desdeFiltro = document.getElementById('filtroDesde').value;
+      const hastaFiltro = document.getElementById('filtroHasta').value;
+
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro}) });
+        const res = await fetch(GAS_URL, { 
+          method: 'POST', 
+          body: JSON.stringify({ 
+            action: 'getReportesAvanzados', 
+            tipoFiltro: tipoFiltro,
+            mesFiltro: mesFiltro,
+            diaFiltro: diaFiltro,
+            desdeFiltro: desdeFiltro,
+            hastaFiltro: hastaFiltro
+          }) 
+        });
         const data = await res.json();
         if(data.success) {
-          setText('repMesActual', mesFiltro || 'General');
+          let etiquetaTexto = 'General';
+          if(tipoFiltro === 'mes') etiquetaTexto = mesFiltro || 'Mes Actual';
+          else if(tipoFiltro === 'dia') etiquetaTexto = diaFiltro || 'Día Específico';
+          else if(tipoFiltro === 'rango') etiquetaTexto = `${desdeFiltro || 'Inicio'} al ${hastaFiltro || 'Fin'}`;
+
+          setText('repMesActual', etiquetaTexto);
           setText('repUltimaAct', data.fechaActualizacion || '-');
           setText('repInstaladas', data.instaladas || 0);
           setText('repClusterC', data.clusterC || 0);
@@ -1575,7 +1622,7 @@
           const tbody = document.getElementById('tablaRanking');
           if(!tbody) return;
           if(data.ranking.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Sin datos</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Sin datos para este período</td></tr>";
           } else {
             tbody.innerHTML = data.ranking.map(r => `
               <tr>
