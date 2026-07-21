@@ -54,10 +54,11 @@
     .nb-btn-accent { background: var(--accent); border: none; color: white; }
     .nb-btn-sm { padding: 4px 8px; font-size: 11px; }
 
+    /* Corrección de superposición en tablas */
     .nb-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .nb-table th { padding: 10px 12px; font-size: 11px; color: var(--ink-soft); border-bottom: var(--border); background: var(--surface-2); text-transform: uppercase; position: sticky; top: 50px; }
-    .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); }
-    .nb-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+    .nb-table th { padding: 12px 10px; font-size: 11px; color: var(--ink-soft); border-bottom: var(--border); background: var(--surface-2); text-transform: uppercase; }
+    .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); background: var(--surface); }
+    .nb-table tr:hover td { background: rgba(255,255,255,0.04); cursor: pointer; }
 
     .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; display: inline-block; }
     .nb-badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
@@ -216,6 +217,7 @@
     </div>
   </div>
 
+  <!-- MODAL VENTA NUEVA -->
   <div id="modalVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
     <div style="background: #000; width: 100%; max-width: 800px; border: 2px solid #333; font-family: 'MS Sans Serif', Arial, sans-serif; margin: 20px;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 11px;">
@@ -377,6 +379,7 @@
     </div>
   </div>
 
+  <!-- MODAL USUARIOS -->
   <div id="modalUsuario" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div style="background: #000; width: 100%; max-width: 450px; border: 2px solid #333;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
@@ -400,19 +403,17 @@
     </div>
   </div>
 
+  <!-- MODAL DETALLE DE VENTA COMPLETO (ESTILO SISTEMA) -->
   <div id="modalDetalleVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
-    <div id="contenidoDetalleVenta"></div>
+    <div id="contenidoDetalleVenta" style="width: 100%; max-width: 900px; margin: 20px;"></div>
   </div>
 
   <script>
-    // ========== CONFIGURACIÓN ==========
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';
-    // =========================================================
 
     let todasLasVentas = [];
     let usuarioActual = null;
     let filtroTimeout = null;
-    let ventaActualDetalle = null;
 
     const PRODUCTOS_FIBRA = ['300 Megas','300mb + tv dig + 1 deco','300mb + tv dig.. sin deco','600 Megas','600mb + tv dig + 1 deco','600mb + tv dig.. sin deco','1000 Megas','GIGA + tv dig + 1 deco','GIGA + tv dig.. sin deco'];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
@@ -439,15 +440,9 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({
-            action: 'loginUsuario',
-            email: email,
-            pass: pass
-          })
+          body: JSON.stringify({ action: 'loginUsuario', email: email, pass: pass })
         });
-        
         const data = await res.json();
-
         if(data.success) {
           usuarioActual = data.user;
           localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
@@ -471,15 +466,13 @@
     function mostrarApp() {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
-      const userData = JSON.parse(localStorage.getItem('paces_user'));
-      usuarioActual = userData;
+      usuarioActual = JSON.parse(localStorage.getItem('paces_user'));
       document.getElementById('userInfo').textContent = `${usuarioActual.nombre} | ${usuarioActual.rol}`;
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         document.getElementById('linkUsuarios').style.display = 'flex';
       }
       const hoy = new Date();
-      const mesActual = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
-      document.getElementById('filtroMes').value = mesActual;
+      document.getElementById('filtroMes').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
       cargarVentas();
     }
 
@@ -544,8 +537,7 @@
     }
 
     window.onload = function() {
-      const savedUser = localStorage.getItem('paces_user');
-      if(savedUser) {
+      if(localStorage.getItem('paces_user')) {
         mostrarApp();
       }
     };
@@ -589,7 +581,7 @@
         return `<tr onclick="verDetalleVenta(${idx})">
           <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td><strong>${r[2] || ''}</strong></td>
           <td>${r[3] || ''}</td><td>${r[4] || ''}</td><td>${r[5] || ''}</td><td>${r[6] || ''}</td>
-          <td><span class="nb-badge ${bClass}" onclick="event.stopPropagation(); cambiarEstado('${r[2]}','${est}')">${est}</span></td>
+          <td><span class="nb-badge ${bClass}">${est}</span></td>
           <td>${adjHTML}</td></tr>`;
       }).join('');
     }
@@ -602,34 +594,142 @@
     function filtrarVentas() {
       const q = safeLower(document.getElementById('buscarVenta').value);
       const filtradas = todasLasVentas.filter(r =>
-        safeLower(r[2]).includes(q) ||
-        safeLower(r[3]).includes(q) ||
-        safeLower(r[4]).includes(q) ||
-        safeLower(r[5]).includes(q)
+        safeLower(r[2]).includes(q) || safeLower(r[3]).includes(q) ||
+        safeLower(r[4]).includes(q) || safeLower(r[5]).includes(q)
       );
       renderVentas(filtradas);
       document.getElementById('contadorVentas').textContent = `${filtradas.length} de ${todasLasVentas.length}`;
     }
 
-    async function cambiarEstado(doc, estadoActual) {
-      const nuevo = prompt(`Cambiar estado de ${doc}\nActual: ${estadoActual}\n\nNuevo: CUMPLIDA / CANCELADA / PENDIENTE`, estadoActual);
-      if(!nuevo || nuevo === estadoActual) return;
-      
+    // --- MODAL DETALLE VENTA (ESTILO SISTEMA DE LA IMAGEN) ---
+    function verDetalleVenta(idx) {
+      const r = todasLasVentas[idx];
+      let est = r[7] || "PENDIENTE";
+      let adjLink = (r[10] && r[10].toString().includes("http")) ? `<a href="${r[10]}" target="_blank" style="color:#3b82f6; text-decoration:underline;">Ver documento adjunto</a>` : "Sin adjunto";
+
+      const html = `
+        <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
+          <!-- Barra de Título Windows -->
+          <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
+            <span>○ ${r[3]} ${r[4]} — DNI: ${r[2]}</span>
+            <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
+          </div>
+
+          <!-- Estado actual banner -->
+          <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 11px; font-weight: bold; color: #333;">ESTADO ACTUAL:</span>
+            <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; font-weight: bold; background: #fff; color: #000; border: 1px solid #7f9db9;">
+              <option value="PENDIENTE" ${est==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+              <option value="CUMPLIDA" ${est==='CUMPLIDA'?'selected':''}>CUMPLIDA (INSTALADA)</option>
+              <option value="CANCELADA" ${est==='CANCELADA'?'selected':''}>CANCELADA</option>
+              <option value="A RECUPERAR" ${est==='A RECUPERAR'?'selected':''}>A RECUPERAR</option>
+            </select>
+            <button onclick="actualizarEstadoDesdeDetalle('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+          </div>
+
+          <!-- Contenedor con grilla de datos idéntico a la imagen -->
+          <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+              
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">CAMPAÑA</div>
+                <div style="font-weight: bold; color: #000;">${r[1] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">PRODUCTO</div>
+                <div style="font-weight: bold; color: #000;">${r[6] || '-'}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">DOCUMENTO</div>
+                <div style="font-weight: bold; color: #000;">DNI: ${r[2] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">NOMBRE COMPLETO</div>
+                <div style="font-weight: bold; color: #000;">${r[3] || ''} ${r[4] || ''}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">FECHA NACIMIENTO</div>
+                <div style="font-weight: bold; color: #000;">${r[11] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">VENDEDOR</div>
+                <div style="font-weight: bold; color: #000;">${r[5] || '-'}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">FECHA VENTA</div>
+                <div style="font-weight: bold; color: #000;">${r[0] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TELÉFONO TITULAR</div>
+                <div style="font-weight: bold; color: #000;">${r[12] || '-'}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TELÉFONO ALT.</div>
+                <div style="font-weight: bold; color: #000;">${r[13] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">TEL. TOTALIZABLE</div>
+                <div style="font-weight: bold; color: #000;">${r[14] || '-'}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">MAIL</div>
+                <div style="font-weight: bold; color: #000;">${r[15] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">PROVINCIA</div>
+                <div style="font-weight: bold; color: #000;">${r[16] || '-'}</div>
+              </div>
+
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">LOCALIDAD</div>
+                <div style="font-weight: bold; color: #000;">${r[17] || '-'}</div>
+              </div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;">
+                <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 2px;">LEAD</div>
+                <div style="font-weight: bold; color: #000;">${r[18] || '-'}</div>
+              </div>
+
+            </div>
+
+            <!-- OBSERVACIONES EDITABLES Y ADJUNTOS -->
+            <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
+              <div style="color: #666; font-size: 9px; font-weight: bold; margin-bottom: 4px;">OBSERVACIÓN / COMENTARIO (VISIBLE PARA EL VENDEDOR)</div>
+              <textarea id="detalleObs" style="width: 100%; height: 50px; font-size: 11px; padding: 4px; border: 1px solid #7f9db9;">${r[19] || ''}</textarea>
+              <button onclick="actualizarObsDesdeDetalle('${r[2]}')" style="margin-top: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Observación</button>
+            </div>
+
+            <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px; font-size: 11px;">
+              <strong>📎 ADJUNTO:</strong> ${adjLink}
+            </div>
+          </div>
+
+          <!-- Pie de ventana -->
+          <div style="padding: 8px 12px; display: flex; justify-content: flex-end; background: #d4d0c8; border-top: 1px solid #fff;">
+            <button onclick="cerrarModales()" style="padding: 4px 20px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Cerrar</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('contenidoDetalleVenta').innerHTML = html;
+      document.getElementById('modalDetalleVenta').style.display = 'flex';
+    }
+
+    async function actualizarEstadoDesdeDetalle(doc) {
+      const nuevoEstado = document.getElementById('detalleNuevoEstado').value;
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({
-            action: 'procesarAccion',
-            doc: doc,
-            nuevoEstado: nuevo,
-            obs: '',
-            admin: usuarioActual.email
-          })
+          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: nuevoEstado, obs: null, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) {
-          showToast(data.msg);
+          showToast("Estado actualizado correctamente");
           cargarVentas();
+          cerrarModales();
         } else {
           showToast(data.error, 'error');
         }
@@ -638,61 +738,23 @@
       }
     }
 
-    function verDetalleVenta(idx) {
-      const r = todasLasVentas[idx];
-      ventaActualDetalle = r;
-      const html = `
-        <div class="nb-window" style="max-width: 1180px; width: 96vw; background: var(--surface);">
-          <div class="nb-titlebar" style="justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="nb-dot green"></span>
-              <span>${r[3]} ${r[4]}</span>
-              <span class="nb-badge nb-badge-gray" style="margin-left: 4px;">DNI: ${r[2]}</span>
-            </div>
-            <button onclick="cerrarModales()" style="background: none; border: 1px solid rgba(245, 240, 232, 0.4); color: var(--ink); cursor: pointer; padding: 2px 8px; font-family: var(--font-mono); font-size: 12px;">✕</button>
-          </div>
-          <div style="background: var(--surface-2); border-bottom: var(--border); padding: 6px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft);">ESTADO ACTUAL:</span>
-            <span class="nb-badge ${r[7] === 'CUMPLIDA'? 'nb-badge-green' : r[7].includes('CANCELADA')? 'nb-badge-red' : 'nb-badge-blue'}">${r[7]}</span>
-          </div>
-          <div style="max-height: 80vh; overflow-y: auto; padding: 16px;">
-            <div style="border: var(--border-bold); background: var(--surface-2); padding: 10px 12px; margin: 0px 0px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
-                <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px;">🧩 Productos de esta orden (1)</span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 9px; border: 2px solid var(--primary); background: var(--surface); width: 100%;">
-                  <span style="font-weight: 700; font-size: 13px;">${r[6]}</span>
-                  <span style="font-size: 10px; font-family: var(--font-mono); color: var(--ink-soft);">(principal)</span>
-                  <span class="nb-badge nb-badge-blue" style="font-size: 10px;">${r[7]}</span>
-                  <span style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-                    <span style="font-size: 11px; color: var(--ink-soft);">${r[5]}</span>
-                    <span style="font-size: 10px; background: var(--primary); color: #fff; padding: 1px 6px; font-family: var(--font-mono);">ABIERTA</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 4px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">● Detalle</div>
-            <div class="nb-grid-2">
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Campaña</div><div style="font-weight: 600; font-size: 13px;">${r[1]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Producto</div><div style="font-weight: 600; font-size: 13px;">${r[6]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Documento</div><div style="font-weight: 600; font-size: 13px;">DNI: ${r[2]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Nombre completo</div><div style="font-weight: 600; font-size: 13px;">${r[3]} ${r[4]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Fecha venta</div><div style="font-weight: 600; font-size: 13px;">${r[0]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Vendedor</div><div style="font-weight: 600; font-size: 13px;">${r[5]}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">NUMERO A TOTALIZAR</div><div style="font-weight: 600; font-size: 13px;">${r[16] || '-'}</div></div>
-              <div style="padding: 6px 10px; background: var(--surface-2); border-radius: 4px;"><div style="font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 2px;">Observación</div><div style="font-weight: 600; font-size: 13px; white-space: pre-wrap;">${r[9] || '-'}</div></div>
-            </div>
-            <div style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin: 22px 0px 12px; text-transform: uppercase; letter-spacing: 1px;">📎 Adjuntos</div>
-            <div>${r[10]? `<a href="${r[10]}" target="_blank" style="color:#3b82f6;">Ver adjunto</a>` : '<p style="font-size: 13px; color: var(--ink-soft);">Sin adjuntos aún.</p>'}</div>
-          </div>
-          <div style="padding: 10px 16px; background: var(--surface-2); border-top: var(--border); display: flex; justify-content: space-between;">
-            <button class="nb-btn nb-btn-sm" onclick="cerrarModales()">Cerrar</button>
-          </div>
-        </div>
-      `;
-      document.getElementById('contenidoDetalleVenta').innerHTML = html;
-      document.getElementById('modalDetalleVenta').style.display = 'flex';
+    async function actualizarObsDesdeDetalle(doc) {
+      const nuevaObs = document.getElementById('detalleObs').value;
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: null, obs: nuevaObs, admin: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) {
+          showToast("Observación guardada correctamente");
+          cargarVentas();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+      }
     }
 
     async function guardarNuevaVenta() {
@@ -920,7 +982,6 @@
         showToast(data.error, 'error');
         return;
       }
-      
       document.getElementById('repMesActual').textContent = document.getElementById('filtroMes').value || '-';
       document.getElementById('repUltimaAct').textContent = data.fechaActualizacion || '-';
       document.getElementById('repInstaladas').textContent = data.instaladas || 0;
