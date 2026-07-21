@@ -60,7 +60,6 @@
     .nb-badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
     .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
     .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
-    .nb-badge-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
 
     .report-box { background: white; border: 1px solid #333; border-radius: 4px; padding: 12px; text-align: center; }
     .report-box-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
@@ -92,6 +91,7 @@
       <span class="nb-brand">PACES</span>
       <div class="nb-nav-links">
         <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
+        <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Leads</a>
         <a class="nb-nav-link" onclick="navTo('sec-reportes', this)">📊 Reportes</a>
         <a class="nb-nav-link" onclick="navTo('sec-usuarios', this)" id="linkUsuarios" style="display:none">Usuarios</a>
       </div>
@@ -104,7 +104,7 @@
     <div class="nb-page">
       <div id="errorGlobal" style="display:none;"></div>
 
-      <!-- PANEL KPI PERSONALIZADO PARA AGENTES (MEJORA 5) -->
+      <!-- PANEL KPI PERSONALIZADO -->
       <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
         <div style="font-size: 11px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; font-weight: bold;">📊 Tu Rendimiento Actual</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; text-align: center;">
@@ -115,13 +115,10 @@
         </div>
       </div>
 
-      <!-- SECCIÓN VENTAS CON FILTROS ESTILO CLÁSICO -->
+      <!-- SECCIÓN VENTAS -->
       <div id="sec-ventas" class="page-section">
         <div class="nb-window" style="background: #b0b0b0; border: 2px solid #fff; border-right-color: #404040; border-bottom-color: #404040; color: #000; padding: 10px;">
-          <div style="background: #000080; color: #fff; padding: 4px 8px; font-weight: bold; font-size: 12px; margin-bottom: 10px;">
-            ○ BÚSQUEDA DE VENTAS
-          </div>
-          
+          <div style="background: #000080; color: #fff; padding: 4px 8px; font-weight: bold; font-size: 12px; margin-bottom: 10px;">○ BÚSQUEDA DE VENTAS</div>
           <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr; gap: 8px; align-items: end; font-size: 11px; margin-bottom: 10px;">
             <div>
               <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">BÚSQUEDA LIBRE</label>
@@ -172,6 +169,26 @@
         </div>
       </div>
 
+      <!-- SECCIÓN AGENDA / LEADS -->
+      <div id="sec-agenda" class="page-section" style="display: none;">
+        <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 GESTIÓN DE AGENDA Y CONTACTOS (LEADS)</div>
+            <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto / Lead</button>
+          </div>
+          <div style="font-size: 11px; color: var(--ink-soft);">Aquí puedes registrar prospectos, agregar comentarios de seguimiento y convertirlos directamente en venta. Los administradores y Team Leaders pueden reasignar contactos a otros vendedores.</div>
+        </div>
+
+        <div class="nb-window">
+          <div style="overflow-x: auto; max-height: 550px;">
+            <table class="nb-table">
+              <thead><tr><th>Fecha</th><th>Campaña</th><th>Documento</th><th>Nombre</th><th>Teléfono</th><th>Vendedor Asignado</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaAgenda"><tr><td colspan="8"><div class="loader"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- SECCIÓN REPORTES -->
       <div id="sec-reportes" class="page-section" style="display: none;">
         <div class="nb-window">
@@ -186,7 +203,7 @@
         </div>
 
         <div class="report-section">
-          <div class="report-header">OPERATIVO — <span id="repMesActual">-</span></div>
+          <div class="report-header">OPERATIVO — <span id="repMesActual">-</span> | ACT: <span id="repUltimaAct">-</span></div>
           <div class="nb-grid-6" style="margin-top: 12px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
             <div class="report-box"><div class="report-box-label">INSTALADAS</div><div class="report-box-value" id="repInstaladas">-</div></div>
             <div class="report-box"><div class="report-box-label">CLUSTER C</div><div class="report-box-value" id="repClusterC">-</div></div>
@@ -233,8 +250,6 @@
       </div>
       
       <div style="padding: 12px; background: #000; color: #c0c0c0; max-height: 80vh; overflow-y: auto;">
-        
-        <!-- ALERTA DE DUPLICADOS EN TIEMPO REAL (MEJORA 1) -->
         <div id="alertaDuplicado" style="display:none; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--accent); color: #fca5a5; padding: 8px; margin-bottom: 10px; font-size: 11px; font-weight: bold;">
           ⚠️ ¡Atención! Este DNI ya tiene una venta registrada en el sistema.
         </div>
@@ -262,7 +277,6 @@
               <option>-- Seleccionar --</option>
             </select>
           </div>
-
           <div id="vTipoLineaContainer" style="display:none;">
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TIPO DE LÍNEA (PORTABILIDAD) *</label>
             <select id="vTipoLinea" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -270,7 +284,6 @@
               <option>ABONO MENSUAL</option>
             </select>
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">DOCUMENTO *</label>
             <input type="text" id="vDoc" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;" oninput="verificarDuplicadoDNI()">
@@ -279,7 +292,6 @@
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">FECHA NACIMIENTO (DD/MM/AAAA)</label>
             <input type="text" id="vNac" placeholder="01/01/1990" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">NOMBRE *</label>
             <input type="text" id="vNombre" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -288,7 +300,6 @@
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">APELLIDO *</label>
             <input type="text" id="vApellido" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO TITULAR *</label>
             <input type="text" id="vTel1" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -297,7 +308,6 @@
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO ALTERNATIVO</label>
             <input type="text" id="vTel2" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">NUMERO A TOTALIZAR</label>
             <input type="text" id="vTelTot" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -306,19 +316,17 @@
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">MAIL *</label>
             <input type="email" id="vMail" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">PROVINCIA</label>
             <select id="vProv" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
-              <option value="">-- Seleccionar Provincia --</option>
-              <option>Buenos Aires</option><option>Capital Federal (CABA)</option><option>Catamarca</option><option>Chaco</option><option>Chubut</option><option>Córdoba</option><option>Corrientes</option><option>Entre Ríos</option><option>Formosa</option><option>Jujuy</option><option>La Pampa</option><option>La Rioja</option><option>Mendoza</option><option>Misiones</option><option>Neuquén</option><option>Río Negro</option><option>Salta</option><option>San Juan</option><option>San Luis</option><option>Santa Cruz</option><option>Santa Fe</option><option>Santiago del Estero</option><option>Tierra del Fuego</option><option>Tucumán</option>
+              <option value="">-- Seleccionar --</option>
+              <option>Buenos Aires</option><option>Capital Federal (CABA)</option><option>Córdoba</option><option>Santa Fe</option><option>Mendoza</option><option>Tucumán</option><option>Otra</option>
             </select>
           </div>
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">LOCALIDAD *</label>
             <input type="text" id="vLoc" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">LEAD</label>
             <input type="text" id="vLead" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -329,7 +337,6 @@
               <option value="">--</option><option>A</option><option>B</option><option>C</option><option>D</option>
             </select>
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">CASH</label>
             <select id="vCash" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -342,7 +349,6 @@
               <option>NO</option><option>SI</option>
             </select>
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">METODO PAGO</label>
             <select id="vMetodoPago" onchange="toggleMetodoPago()" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
@@ -350,21 +356,14 @@
               <option>TARJETA</option>
             </select>
           </div>
-
           <div id="containerTarjeta" style="display:none; border: 1px dashed #666; padding: 8px; background: #111;">
-            <label style="display: block; margin-bottom: 3px; color: #3b82f6;">MARCA DE TARJETA</label>
-            <select id="vMarcaTarjeta" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px; margin-bottom: 6px;">
-              <option>VISA</option><option>MASTERCARD</option><option>AMERICAN EXPRESS</option>
-            </select>
             <label style="display: block; margin-bottom: 3px; color: #3b82f6;">DATOS / NÚMERO DE TARJETA</label>
-            <input type="text" id="vDatosTarjeta" placeholder="Ej: Terminada en 1234 o titular" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+            <input type="text" id="vDatosTarjeta" placeholder="Ej: VISA terminada en 1234" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
-
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">OBSERVACIÓN</label>
             <textarea id="vObs" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px; min-height: 60px;"></textarea>
           </div>
-
           <input type="hidden" id="vCampañaDet" value="FIBRA">
         </div>
 
@@ -377,7 +376,6 @@
       </div>
 
       <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
-        <span style="font-size: 10px; margin-right: auto; padding-top: 5px; color: #666;">* Campos obligatorios</span>
         <button onclick="limpiarFormVenta()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">🖊 Limpiar</button>
         <button onclick="cerrarModales()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
         <button onclick="guardarNuevaVenta()" id="btnGuardarVenta" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer; font-weight: bold;">Guardar</button>
@@ -385,7 +383,35 @@
     </div>
   </div>
 
-  <!-- MODAL USUARIOS (CON ASIGNACIÓN DE TEAM LEADER ACTIVO) -->
+  <!-- MODAL AGENDA / LEAD NUEVO -->
+  <div id="modalAgenda" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: #000; width: 100%; max-width: 450px; border: 2px solid #333;">
+      <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
+        <span>○ NUEVO CONTACTO EN AGENDA</span>
+        <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 14px; width: 18px; height: 16px; line-height: 1;">×</button>
+      </div>
+      <div style="padding: 16px; background: #000; color: #c0c0c0; font-size: 11px;">
+        <div style="margin-bottom:10px;"><label>Campaña</label><select id="agCamp" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"><option>Movistar Fibra Optica</option><option>Movistar Portabilidad</option></select></div>
+        <div style="margin-bottom:10px;"><label>Documento (DNI) *</label><input type="text" id="agDoc" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>Nombre *</label><input type="text" id="agNombre" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>Apellido</label><input type="text" id="agApellido" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>Teléfono *</label><input type="text" id="agTel" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div id="containerAsignarVendedor" style="margin-bottom:10px; display:none;"><label>Asignar a Vendedor</label><select id="agVendedor" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></select></div>
+        <div style="margin-bottom:10px;"><label>Comentarios / Notas</label><textarea id="agComentarios" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555; min-height:50px;"></textarea></div>
+      </div>
+      <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
+        <button onclick="cerrarModales()" style="padding: 4px 15px; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
+        <button onclick="guardarContactoAgenda()" style="padding: 4px 15px; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer; font-weight: bold;">Guardar Contacto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE DE AGENDA / SEGUIMIENTO -->
+  <div id="modalDetalleAgenda" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
+    <div id="contenidoDetalleAgenda" style="width: 100%; max-width: 600px; margin: 20px;"></div>
+  </div>
+
+  <!-- MODAL USUARIOS -->
   <div id="modalUsuario" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div style="background: #000; width: 100%; max-width: 450px; border: 2px solid #333;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
@@ -398,13 +424,13 @@
         <div style="margin-bottom:12px;"><label style="font-size:11px;">Email (Login)</label><input type="email" id="uUser" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
         <div style="margin-bottom:12px;"><label style="font-size:11px;">Contraseña</label><input type="password" id="uPass" placeholder="Solo al crear o cambiar" style="width: 100%; padding: 3px 4px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"></div>
         <div style="margin-bottom:12px;"><label style="font-size:11px;">Rol</label><select id="uRol" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>Vendedor</option><option>Team Leader</option><option>Subagente Admin</option></select></div>
-        <div style="margin-bottom:12px;"><label style="font-size:11px;">Team Leader a Cargo (Activo)</label><select id="uLeader" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option value="">-- Sin Team Leader --</option></select></div>
+        <div style="margin-bottom:12px;"><label style="font-size:11px;">Team Leader a Cargo</label><select id="uLeader" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option value="">-- Sin Team Leader --</option></select></div>
         <div style="margin-bottom:12px;"><label style="font-size:11px;">Turno</label><select id="uTurno" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>TM</option><option>TT</option></select></div>
         <div style="margin-bottom:12px;"><label style="font-size:11px;">Estado</label><select id="uEstado" style="width: 100%; padding: 3px; border: 1px solid #555; background: #2a2a2a; color: #fff; font-size: 11px;"><option>ACTIVO</option><option>INACTIVO</option></select></div>
       </div>
       <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
         <button onclick="cerrarModales()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Cancelar</button>
-        <button onclick="procesarUsuario()" id="btnGuardarUser" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Guardar</button>
+        <button onclick="procesarUsuario()" style="padding: 4px 20px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Guardar</button>
       </div>
     </div>
   </div>
@@ -418,14 +444,12 @@
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';
 
     let todasLasVentas = [];
+    let agendaGlobal = [];
     let usuarioActual = null;
     let teamLeadersGlobal = [];
+    let todosLosVendedoresGlobal = [];
 
-    const PRODUCTOS_FIBRA = [
-      '300 Megas', '600 Megas', '1000 Megas',
-      '300mb + tv DIG .. sin deco', '600mb + tv DIG .. sin deco', 'GIGA + tv DIG .. sin deco',
-      '300mb + tv DIG + 1 DECO', '600mb +  tv DIG + 1 DECO', 'GIGA +  tv DIG  + 1 DECO'
-    ];
+    const PRODUCTOS_FIBRA = ['300 Megas', '600 Megas', '1000 Megas', '300mb + tv DIG .. sin deco', '600mb + tv DIG .. sin deco', 'GIGA + tv DIG .. sin deco', '300mb + tv DIG + 1 DECO', '600mb +  tv DIG + 1 DECO', 'GIGA +  tv DIG  + 1 DECO'];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
     function safeLower(v) { return (v || '').toString().toLowerCase(); }
@@ -465,6 +489,8 @@
         document.getElementById('linkUsuarios').style.display = 'flex';
       }
       cargarVentas();
+      cargarAgenda();
+      cargarListaUsuariosGlobales();
     }
 
     function showToast(msg, type = 'info') {
@@ -479,7 +505,6 @@
     function showError(msg) {
       document.getElementById('errorGlobal').innerHTML = `<div class="error-box"><strong>ERROR:</strong> ${msg}</div>`;
       document.getElementById('errorGlobal').style.display = 'block';
-      document.getElementById('tablaVentas').innerHTML = `<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--accent)'>Error: ${msg}</td></tr>`;
     }
 
     function navTo(sectionId, element) {
@@ -489,12 +514,15 @@
       if(element) element.classList.add('active');
       if(sectionId === 'sec-reportes') cargarReportes();
       if(sectionId === 'sec-usuarios') cargarUsuarios();
+      if(sectionId === 'sec-agenda') cargarAgenda();
     }
 
     function cerrarModales() {
       document.getElementById('modalVenta').style.display = 'none';
       document.getElementById('modalUsuario').style.display = 'none';
       document.getElementById('modalDetalleVenta').style.display = 'none';
+      document.getElementById('modalAgenda').style.display = 'none';
+      document.getElementById('modalDetalleAgenda').style.display = 'none';
     }
 
     function cambiarCampaña() {
@@ -521,8 +549,7 @@
     function abrirModalVenta() {
       document.getElementById('modalVenta').style.display = 'flex';
       ['vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vBuscarDNI','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.value = '';
+        const el = document.getElementById(id); if(el) el.value = '';
       });
       document.getElementById('alertaDuplicado').style.display = 'none';
       document.getElementById('vCampaña').selectedIndex = 0;
@@ -538,12 +565,20 @@
       if(localStorage.getItem('paces_user')) { mostrarApp(); }
     };
 
+    async function cargarListaUsuariosGlobales() {
+      try {
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email}) });
+        const data = await res.json();
+        if(data.success) {
+          teamLeadersGlobal = data.teamLeaders || [];
+          todosLosVendedoresGlobal = data.allUsers || [];
+        }
+      } catch(e) {}
+    }
+
     async function cargarVentas() {
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({action: 'getVentas', userEmail: usuarioActual.email, opts: {}})
-        });
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getVentas', userEmail: usuarioActual.email}) });
         const data = await res.json();
         if(data.success) {
           todasLasVentas = data.rows;
@@ -566,19 +601,15 @@
       document.getElementById('kpiEfectividad').textContent = efectividad;
     }
 
-    // VERIFICACIÓN DE DUPLICADOS EN TIEMPO REAL (MEJORA 1)
     function verificarDuplicadoDNI() {
       const dni = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc').value.trim();
       const alerta = document.getElementById('alertaDuplicado');
       if(!dni) { alerta.style.display = 'none'; return; }
-
       const duplicado = todasLasVentas.find(r => r[2].toString().trim() === dni);
       if(duplicado) {
         alerta.style.display = 'block';
         alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[5]} (${duplicado[7] || 'PENDIENTE'}).`;
-      } else {
-        alerta.style.display = 'none';
-      }
+      } else { alerta.style.display = 'none'; }
     }
 
     function aplicarFiltrosAvanzados() {
@@ -639,10 +670,8 @@
         document.getElementById('vMail').value = encontrada[15] || '';
         document.getElementById('vProv').value = encontrada[16] || '';
         document.getElementById('vLoc').value = encontrada[17] || '';
-        showToast('¡Datos autocompletados desde venta anterior!', 'info');
-      } else {
-        document.getElementById('vDoc').value = dni;
-      }
+        showToast('¡Datos autocompletados!', 'info');
+      } else { document.getElementById('vDoc').value = dni; }
       verificarDuplicadoDNI();
     }
 
@@ -652,7 +681,7 @@
         datosParaExportar = todasLasVentas.filter(r => safeLower(r[5]) === safeLower(usuarioActual.nombre) || safeLower(r[5]) === safeLower(usuarioActual.email));
       }
       if(!datosParaExportar || datosParaExportar.length === 0) {
-        showToast('No hay ventas para descargar con ese filtro', 'error'); return;
+        showToast('No hay ventas para descargar', 'error'); return;
       }
       let csvContent = "data:text/csv;charset=utf-8,";
       csvContent += "Fecha,Campaña,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
@@ -671,12 +700,15 @@
       const r = todasLasVentas[idx];
       let est = r[7] || "PENDIENTE";
       let nroOrdenActual = r[21] || '';
+      let vendedorActual = r[5] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
+
+      let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
-            <span>○ Detalle — ${r[3]} ${r[4]} (DNI: ${r[2]})</span>
+            <span>○ Detalle Venta — ${r[3]} ${r[4]} (DNI: ${r[2]})</span>
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
@@ -690,9 +722,11 @@
             </select>
             
             ${esAdminTL ? `
-              <span style="font-size: 11px; font-weight: bold; margin-left: 10px;">NRO ORDEN:</span>
-              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 120px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
-              <button onclick="actualizarOrdenYEstado('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Cambios</button>
+              <span style="font-size: 11px; font-weight: bold;">NRO ORDEN:</span>
+              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <span style="font-size: 11px; font-weight: bold;">VENDEDOR:</span>
+              <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
+              <button onclick="guardarCambiosVentaAdminTL('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
               <button onclick="actualizarEstadoSolo('${r[2]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
@@ -704,7 +738,7 @@
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>PRODUCTO:</b> ${r[6] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[2] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[3] || ''} ${r[4] || ''}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR:</b> ${r[5] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[5] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[12] || '-'}</div>
             </div>
 
@@ -715,7 +749,6 @@
               <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${r[19] || 'Sin notas'}</pre>
             </div>
           </div>
-
           <div style="padding: 8px 12px; display: flex; justify-content: flex-end; background: #d4d0c8; border-top: 1px solid #fff;">
             <button onclick="cerrarModales()" style="padding: 4px 20px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Cerrar</button>
           </div>
@@ -728,11 +761,24 @@
     async function actualizarEstadoSolo(doc) {
       enviarAccionServidor(doc, document.getElementById('detalleNuevoEstado').value, null, null);
     }
-    async function actualizarOrdenYEstado(doc) {
-      enviarAccionServidor(doc, document.getElementById('detalleNuevoEstado').value, null, document.getElementById('detalleNroOrden').value);
-    }
     async function actualizarObs(doc) {
       enviarAccionServidor(doc, null, document.getElementById('detalleObs').value, null);
+    }
+    async function guardarCambiosVentaAdminTL(doc) {
+      const nuevoEst = document.getElementById('detalleNuevoEstado').value;
+      const nuevoOrden = document.getElementById('detalleNroOrden').value;
+      const nuevoVend = document.getElementById('detalleNuevoVendedor').value;
+
+      await enviarAccionServidor(doc, nuevoEst, null, nuevoOrden);
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'cambiarVendedorVenta', doc: doc, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) { showToast("Venta y vendedor actualizados"); cargarVentas(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al reasignar vendedor', 'error'); }
     }
 
     async function enviarAccionServidor(doc, estado, obs, nroOrden) {
@@ -756,11 +802,10 @@
 
       btn.innerText = "Guardando..."; btn.disabled = true;
       const metodo = document.getElementById('vMetodoPago').value;
-      const datosTarjetaVal = metodo === 'TARJETA' ? `${document.getElementById('vMarcaTarjeta').value} - ${document.getElementById('vDatosTarjeta').value}` : 'EFECTIVO';
+      const datosTarjetaVal = metodo === 'TARJETA' ? document.getElementById('vDatosTarjeta').value : 'EFECTIVO';
 
       const d = {
         campana: document.getElementById('vCampaña').value,
-        campanaDet: document.getElementById('vCampañaDet').value,
         producto: document.getElementById('vProducto').value,
         documento: doc, nacimiento: document.getElementById('vNac').value,
         nombre: nombre, apellido: apellido,
@@ -775,12 +820,10 @@
         cluster: document.getElementById('vCluster').value,
         cash: document.getElementById('vCash').value,
         tv: document.getElementById('vTV').value,
-        metodoPago: metodo, datosTarjeta: datosTarjetaVal,
-        tipoLinea: document.getElementById('vCampaña').value === 'Movistar Portabilidad'? document.getElementById('vTipoLinea').value : null
+        metodoPago: metodo, datosTarjeta: datosTarjetaVal
       };
 
       const files = [document.getElementById('vArchivo1').files[0], document.getElementById('vArchivo2').files[0], document.getElementById('vArchivo3').files[0]].filter(Boolean);
-
       const enviar = async (datos) => {
         try {
           const res = await fetch(GAS_URL, {
@@ -801,17 +844,164 @@
       } else { enviar(d); }
     }
 
-    function limpiarFormVenta() {
-      ['vBuscarDNI','vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
-        const el = document.getElementById(id); if(el) el.value = '';
-      });
-      document.getElementById('alertaDuplicado').style.display = 'none';
-      document.getElementById('vCampaña').selectedIndex = 0;
-      document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
-      document.getElementById('vProv').selectedIndex = 0;
-      document.getElementById('vMetodoPago').selectedIndex = 0;
-      document.getElementById('containerTarjeta').style.display = 'none';
-      document.getElementById('vTipoLineaContainer').style.display = 'none';
+    // GESTIÓN DE AGENDA / LEADS Y CONTACTOS
+    async function cargarAgenda() {
+      try {
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
+        const data = await res.json();
+        if(data.success) {
+          agendaGlobal = data.rows;
+          renderAgenda(agendaGlobal);
+        }
+      } catch(e) {}
+    }
+
+    function renderAgenda(data) {
+      const tbody = document.getElementById('tablaAgenda');
+      if(data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;padding:30px;color:var(--ink-soft)'>No hay contactos en la agenda</td></tr>";
+        return;
+      }
+      tbody.innerHTML = data.map((r, idx) => {
+        let est = r[8] || 'NUEVO';
+        let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : 'nb-badge-yellow');
+        return `<tr>
+          <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td>${r[2] || ''}</td>
+          <td>${r[3] || ''} ${r[4] || ''}</td><td>${r[6] || ''}</td>
+          <td><strong>${r[5] || ''}</strong></td>
+          <td><span class="nb-badge ${bClass}">${est}</span></td>
+          <td><button onclick="verDetalleAgenda(${idx})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function abrirModalAgenda() {
+      ['agDoc','agNombre','agApellido','agTel','agComentarios'].forEach(id => document.getElementById(id).value = '');
+      const containerAsignar = document.getElementById('containerAsignarVendedor');
+      const selectVend = document.getElementById('agVendedor');
+      
+      if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
+        containerAsignar.style.display = 'block';
+        selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+      } else {
+        containerAsignar.style.display = 'none';
+      }
+      document.getElementById('modalAgenda').style.display = 'flex';
+    }
+
+    async function guardarContactoAgenda() {
+      const doc = document.getElementById('agDoc').value.trim();
+      const nombre = document.getElementById('agNombre').value.trim();
+      const tel = document.getElementById('agTel').value.trim();
+      if(!doc || !nombre || !tel) { showToast('Completá Documento, Nombre y Teléfono', 'error'); return; }
+
+      const d = {
+        campana: document.getElementById('agCamp').value,
+        documento: doc, nombre: nombre, apellido: document.getElementById('agApellido').value.trim(),
+        telefono: tel, comentarios: document.getElementById('agComentarios').value.trim(),
+        vendedor: ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol) ? document.getElementById('agVendedor').value : usuarioActual.nombre
+      };
+
+      try {
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'guardarAgenda', userEmail: usuarioActual.email, data: d}) });
+        const data = await res.json();
+        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al guardar contacto', 'error'); }
+    }
+
+    function verDetalleAgenda(idx) {
+      const r = agendaGlobal[idx];
+      let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
+      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[5].toLowerCase()?'selected':''}>${v}</option>`).join('');
+
+      const html = `
+        <div style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 16px; border-radius: 6px; font-size: 12px;">
+          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Seguimiento Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
+          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[6]}</div>
+          <div style="margin-bottom: 8px;"><b>Vendedor Asignado Actual:</b> ${r[5]}</div>
+          
+          ${esAdminTL ? `
+            <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
+              <label style="display:block; margin-bottom: 4px; color: var(--ink-soft);">REASIGNAR A OTRO VENDEDOR:</label>
+              <select id="agNuevoVendedor" style="width: 100%; padding: 4px; background: #1a1a1a; color: #fff; border: 1px solid #555;">${optionsVend}</select>
+              <button onclick="reasignarContactoLead('${r[2]}')" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
+            </div>
+          ` : ''}
+
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">ESTADO:</label>
+            <select id="agNuevoEstado" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
+              <option value="NUEVO" ${r[8]==='NUEVO'?'selected':''}>NUEVO</option>
+              <option value="CONTACTADO" ${r[8]==='CONTACTADO'?'selected':''}>CONTACTADO</option>
+              <option value="DESCARTADO" ${r[8]==='DESCARTADO'?'selected':''}>DESCARTADO</option>
+              <option value="VENDIDO" ${r[8]==='VENDIDO'?'selected':''}>VENDIDO</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">NUEVO COMENTARIO / SEGUIMIENTO:</label>
+            <textarea id="agNuevoComentario" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555; height: 60px;" placeholder="Escribe el resultado del llamado..."></textarea>
+          </div>
+
+          <div style="background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 12px; max-height: 100px; overflow-y: auto; font-family: monospace; font-size: 11px;">
+            <b>Historial de Comentarios:</b><br>${r[7] || 'Sin comentarios'}
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button onclick="convertirEnVenta('${r[2]}')" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
+            <button onclick="guardarSeguimientoAgenda('${r[2]}')" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
+            <button onclick="cerrarModales()" class="nb-btn" style="background: #444;">Cerrar</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('contenidoDetalleAgenda').innerHTML = html;
+      document.getElementById('modalDetalleAgenda').style.display = 'flex';
+    }
+
+    async function guardarSeguimientoAgenda(doc) {
+      const nuevoEst = document.getElementById('agNuevoEstado').value;
+      const comentario = document.getElementById('agNuevoComentario').value.trim();
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, comentarios: comentario, nuevoVendedor: null, admin: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al actualizar', 'error'); }
+    }
+
+    async function reasignarContactoLead(doc) {
+      const nuevoVend = document.getElementById('agNuevoVendedor').value;
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al reasignar', 'error'); }
+    }
+
+    async function convertirEnVenta(doc) {
+      if(!confirm('¿Estás seguro de convertir este contacto en una venta activa?')) return;
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'convertirAgenda', doc: doc, userEmail: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) {
+          showToast(data.msg);
+          cerrarModales();
+          cargarAgenda();
+          cargarVentas();
+        } else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al convertir', 'error'); }
     }
 
     async function cargarReportes() {
@@ -820,15 +1010,13 @@
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro}) });
         const data = await res.json();
         if(data.success) {
-          document.getElementById('repMesActual').textContent = mesFiltro || '-';
-          document.getElementById('repUltimaAct').textContent = data.fechaActualizacion || '-';
+          document.getElementById('repMesActual').textContent = mesFiltro || 'General';
           document.getElementById('repInstaladas').textContent = data.instaladas || 0;
           document.getElementById('repClusterC').textContent = data.clusterC || 0;
           document.getElementById('repCash').textContent = data.cash || 0;
           document.getElementById('repCancelado').textContent = data.cancelado || 0;
           document.getElementById('repPendientes').textContent = data.pendientes || 0;
 
-          // Renderizar tabla de ranking con cantidad de ventas por usuario
           const tbody = document.getElementById('tablaRanking');
           if(data.ranking.length === 0) {
             tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Sin datos</td></tr>";
@@ -856,7 +1044,6 @@
         const tbody = document.getElementById('tablaUsuarios');
         if(data.success) {
           teamLeadersGlobal = data.teamLeaders || [];
-          // Poblar select de Team Leader en el modal de usuario
           const selectTL = document.getElementById('uLeader');
           selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${tl}">${tl}</option>`).join('');
 
@@ -878,9 +1065,6 @@
     function abrirModalUsuario() {
       document.getElementById('uTitulo').innerText = "○ CREAR USUARIO";
       ['uOriginal','uNombre','uUser','uPass','uLeader'].forEach(id => document.getElementById(id).value = '');
-      // Refrescar selector de TL activos
-      const selectTL = document.getElementById('uLeader');
-      selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${tl}">${tl}</option>`).join('');
       document.getElementById('modalUsuario').style.display = 'flex';
     }
 
