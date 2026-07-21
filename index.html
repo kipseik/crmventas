@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,7 +20,7 @@
     .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
     .login-box { background: #1a1a1a; border: 2px solid #333; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(59,130,246,0.3); }
     .login-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--primary); margin-bottom: 30px; letter-spacing: 2px; }
-    .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #555; background: #2a2a; color: #ffffff; font-size: 13px; }
+    .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #555; background: #2a2a2a; color: #ffffff; font-size: 13px; }
     .login-input:focus { outline: none; border-color: var(--primary); background: #333; }
     .login-input::placeholder { color: #888; }
     .login-btn { width: 100%; padding: 12px; background: var(--primary); border: none; color: white; font-weight: 700; cursor: pointer; font-size: 14px; }
@@ -60,13 +59,13 @@
     .nb-table { width: 100%; border-collapse: collapse; text-align: left; }
     .nb-table th { padding: 10px 12px; font-size: 11px; color: var(--ink-soft); border-bottom: var(--border); background: var(--surface-2); text-transform: uppercase; position: sticky; top: 50px; }
     .nb-table td { padding: 10px 12px; font-size: 12px; border-bottom: var(--border); }
-    .nb-table tr:hover { background: rgba(255,255,0.02); cursor: pointer; }
+    .nb-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
 
     .nb-badge { padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
     .nb-badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
     .nb-badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
     .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
-    .nb-badge-red { background: rgba(239, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
     .nb-badge-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
 
     .nb-grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
@@ -246,7 +245,7 @@
           <div style="display: flex; gap: 6px; align-items: center;">
             <input type="text" id="vBuscarDNI" placeholder="DNI" style="width: 100px; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;">
             <input type="text" id="vBuscarDNINombre" placeholder="DNI del cliente..." style="flex: 1; padding: 3px 4px; border: 1px solid #444; font-size: 11px; background: #1a1a1a; color: #fff;" readonly>
-            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0; font-size: 11px; cursor: pointer;">Buscar</button>
+            <button onclick="buscarClienteDNI()" style="padding: 3px 14px; border: 1px solid #666; background: #2d2d2d; color: #c0c0c0; font-size: 11px; cursor: pointer;">Buscar</button>
           </div>
         </fieldset>
 
@@ -367,8 +366,15 @@
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">METODO PAGO</label>
             <select id="vMetodoPago" style="width: 100%; padding: 3px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
               <option>EFECTIVO</option>
-              <option>TARJETA</option>
+              <option>TARJETA</
+
+</option>
             </select>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">OBSERVACIÓN</label>
+            <textarea id="vObs" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px; min-height: 60px;"></textarea>
           </div>
 
          <input type="hidden" id="vCampañaDet" value="FIBRA">
@@ -420,7 +426,7 @@
 
   <script>
     // ========== CONFIGURACIÓN ==========
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';; // ⚠️ CAMBIÁ ESTA LÍNEA
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec'; // ⚠️ CAMBIÁ ESTA LÍNEA
     // =========================================================
 
     let todasLasVentas = [];
@@ -566,7 +572,7 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({action: 'getVentas', opts: {}})
+          body: JSON.stringify({action: 'getVentas', userEmail: usuarioActual.email, opts: {}})
         });
         const data = await res.json();
         procesarVentas(data);
@@ -750,7 +756,7 @@
         try {
           const res = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({action: 'guardarVenta', data: datos})
+            body: JSON.stringify({action: 'guardarVenta', userEmail: usuarioActual.email, data: datos})
           });
           const result = await res.json();
           btn.innerText = "Guardar";
@@ -824,7 +830,7 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({action: 'getUsuarios'})
+          body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email})
         });
         const data = await res.json();
         llenarUsuarios(data);
@@ -846,7 +852,7 @@
       tbody.innerHTML = data.rows.map(r => {
         let btnStr = `<button onclick="editarUser('${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}','${r[5]}')" class="nb-btn nb-btn-sm">Editar</button>`;
         let badgeColor = r[5] === 'ACTIVO'? 'nb-badge-green' : 'nb-badge-red';
-        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
+        return `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="nb-badge ${badgeColor}">${r[5]}</span></td><td>${btnStr}</td></tr>`;
       }).join('');
     }
 
@@ -860,6 +866,8 @@
       document.getElementById('modalUsuario').style.display = 'flex';
     }
 
+    function editarUser(nombre, user, rol, leader, turno, estado) {
+      document.getElementById('uTitulo').innerText = "○ EDITAR
     function editarUser(nombre, user, rol, leader, turno, estado) {
       document.getElementById('uTitulo').innerText = "○ EDITAR USUARIO";
       document.getElementById('uOriginal').value = user;
@@ -893,7 +901,7 @@
 
       try {
         const action = original ? 'editarUsuarioGS' : 'guardarUsuario';
-        const body = original ? {action, originalEmail: original, data} : {action, data};
+        const body = original ? {action, userEmail: usuarioActual.email, originalEmail: original, data} : {action, userEmail: usuarioActual.email, data};
         
         const res = await fetch(GAS_URL, {
           method: 'POST',
