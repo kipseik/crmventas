@@ -61,6 +61,13 @@
     .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
     .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
 
+    /* ESTILOS KANBAN */
+    .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px; overflow-x: auto; min-height: 500px; }
+    .kanban-column { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 250px; }
+    .kanban-col-header { font-size: 11px; font-weight: bold; text-transform: uppercase; padding: 6px; background: #2a2a2a; border-radius: 4px; text-align: center; color: var(--primary); }
+    .kanban-card { background: #262626; border: 1px solid #444; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 11px; transition: transform 0.1s; }
+    .kanban-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
     .report-box { background: white; border: 1px solid #333; border-radius: 4px; padding: 12px; text-align: center; }
     .report-box-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
     .report-box-value { font-size: 32px; font-weight: 900; color: #1e40af; }
@@ -91,7 +98,7 @@
       <span class="nb-brand">PACES</span>
       <div class="nb-nav-links">
         <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
-        <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Contactos</a>
+        <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Pipeline</a>
         <a class="nb-nav-link" onclick="navTo('sec-reportes', this)">📊 Reportes</a>
         <a class="nb-nav-link" onclick="navTo('sec-config', this)" id="linkConfig" style="display:none">⚙️ Campañas</a>
         <a class="nb-nav-link" onclick="navTo('sec-usuarios', this)" id="linkUsuarios" style="display:none">Usuarios</a>
@@ -105,9 +112,15 @@
     <div class="nb-page">
       <div id="errorGlobal" style="display:none;"></div>
 
-      <!-- PANEL KPI PERSONALIZADO -->
+      <!-- PANEL KPI PERSONALIZADO Y GAMIFICATION DE METAS -->
       <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
-        <div style="font-size: 11px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; font-weight: bold;">📊 Tu Rendimiento Actual</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--ink-soft); font-weight: bold;">📊 Tu Rendimiento y Meta del Día</div>
+          <div id="metaTextoProgreso" style="font-size: 11px; font-weight: bold; color: var(--primary);">Meta diaria: 3 ventas</div>
+        </div>
+        <div style="background: #2d2d2d; border-radius: 4px; height: 8px; width: 100%; margin-bottom: 10px; overflow: hidden;">
+          <div id="barraProgresoMeta" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.5s;"></div>
+        </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; text-align: center;">
           <div style="background: #2d2d2d; padding: 8px; border-radius: 4px;"><div style="font-size: 9px; color: #888;">TOTAL VENTAS</div><div id="kpiTotal" style="font-size: 18px; font-weight: bold; color: #3b82f6;">0</div></div>
           <div style="background: #2d2d2d; padding: 8px; border-radius: 4px;"><div style="font-size: 9px; color: #888;">INSTALADAS</div><div id="kpiInstaladas" style="font-size: 18px; font-weight: bold; color: #10b981;">0</div></div>
@@ -168,17 +181,21 @@
         </div>
       </div>
 
-      <!-- SECCIÓN AGENDA / CONTACTOS -->
+      <!-- SECCIÓN AGENDA / PIPELINE -->
       <div id="sec-agenda" class="page-section" style="display: none;">
         <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-            <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 AGENDA Y LLAMADOS DE SEGUIMIENTO</div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 AGENDA Y PIPELINE DE PROSPECTOS</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <div style="background: #2a2a2a; border-radius: 4px; padding: 2px; display: flex; gap: 2px;">
+                <button onclick="cambiarVistaAgenda('tabla')" id="btnVistaTabla" class="nb-btn nb-btn-sm" style="background: var(--primary); color:#fff;">Vista Tabla</button>
+                <button onclick="cambiarVistaAgenda('kanban')" id="btnVistaKanban" class="nb-btn nb-btn-sm">Vista Kanban</button>
+              </div>
               <button onclick="filtrarLlamadosHoy()" id="btnFiltroHoy" class="nb-btn nb-btn-sm" style="background: #f59e0b; color: #000; font-weight: bold;">🔔 Llamados de Hoy</button>
               <button onclick="filtrarLeadsEnFrio()" class="nb-btn nb-btn-sm" style="background: rgba(239,68,68,0.2); color: #fca5a5; font-weight: bold;">⚠️ Leads en Frío</button>
               <button onclick="cargarAgenda()" class="nb-btn nb-btn-sm">Ver Todos</button>
               <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto</button>
-              <button onclick="abrirModalImportarLote()" id="btnImportarLote" class="nb-btn nb-btn-primary nb-btn-sm" style="background: #0f766e; display:none;">📥 Importación Masiva (Excel / Lote)</button>
+              <button onclick="abrirModalImportarLote()" id="btnImportarLote" class="nb-btn nb-btn-primary nb-btn-sm" style="background: #0f766e; display:none;">📥 Importación Masiva (Teléfonos)</button>
             </div>
           </div>
           
@@ -189,7 +206,8 @@
           </div>
         </div>
 
-        <div class="nb-window">
+        <!-- CONTENEDOR VISTA TABLA -->
+        <div id="contenedorVistaTabla" class="nb-window">
           <div style="overflow-x: auto; max-height: 550px;">
             <table class="nb-table">
               <thead>
@@ -200,6 +218,28 @@
               </thead>
               <tbody id="tablaAgenda"><tr><td colspan="9"><div class="loader"></div></td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- CONTENEDOR VISTA KANBAN -->
+        <div id="contenedorVistaKanban" class="nb-window" style="display: none; background: #121212;">
+          <div class="kanban-board">
+            <div class="kanban-column">
+              <div class="kanban-col-header">Nuevos</div>
+              <div id="kanbanNuevos" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
+            </div>
+            <div class="kanban-column">
+              <div class="kanban-col-header" style="color: #60a5fa;">Contactados</div>
+              <div id="kanbanContactados" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
+            </div>
+            <div class="kanban-column">
+              <div class="kanban-col-header" style="color: #10b981;">Vendidos</div>
+              <div id="kanbanVendidos" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
+            </div>
+            <div class="kanban-column">
+              <div class="kanban-col-header" style="color: #ef4444;">Descartados</div>
+              <div id="kanbanDescartados" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -457,11 +497,11 @@
     </div>
   </div>
 
-  <!-- MODAL IMPORTACIÓN MASIVA (EXCEL / LOTE) -->
+  <!-- MODAL IMPORTACIÓN MASIVA (TELÉFONOS O EXCEL) -->
   <div id="modalImportarLote" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div style="background: #000; width: 100%; max-width: 550px; border: 2px solid #333;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
-        <span>○ IMPORTACIÓN MASIVA DESDE EXCEL O WHATSAPP</span>
+        <span>○ IMPORTACIÓN MASIVA DE TELÉFONOS / LOTE</span>
         <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 14px; width: 18px; height: 16px; line-height: 1;">×</button>
       </div>
       <div style="padding: 16px; background: #000; color: #c0c0c0; font-size: 11px;">
@@ -481,8 +521,8 @@
           <select id="loteDestinoVendedor" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></select>
         </div>
         <div style="margin-bottom:6px;">
-          <label>💡 Pega aquí tus contactos de Excel (Formato: <code style="color:#60a5fa;">DNI, Nombre, Dirección, Teléfono</code>)</label>
-          <textarea id="loteTextoRaw" placeholder="30123456, Juan Pérez, Av. Corrientes 1234, 1122334455" style="width:100%; padding:6px; background:#222; color:#fff; border:1px solid #555; height: 130px; font-family: monospace; font-size: 11px;"></textarea>
+          <label>💡 <b>Aviso:</b> Puedes pegar una lista de <u>solo números de teléfono</u> (un número por línea). Los campos restantes (Nombre, DNI, Dirección) se completarán automáticamente con <b>XXXX</b> por defecto.</label>
+          <textarea id="loteTextoRaw" placeholder="1122334455&#10;1199887766&#10;1144556677" style="width:100%; padding:6px; background:#222; color:#fff; border:1px solid #555; height: 130px; font-family: monospace; font-size: 11px;"></textarea>
         </div>
       </div>
       <div style="padding: 8px 12px; display: flex; justify-content: flex-end; gap: 6px; background: #000; border-top: 1px solid #444;">
@@ -523,7 +563,7 @@
 
   <!-- MODAL DETALLE DE VENTA -->
   <div id="modalDetalleVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center; overflow-y: auto;">
-    <div id="contenidoDetalleVenta" style="width: 100%; max-width: 900px; margin: 20px;"></div>
+    <div id="contenidoDetalleVenta" style="width: 100%; max-width: 950px; margin: 20px;"></div>
   </div>
 
   <script>
@@ -535,6 +575,7 @@
     let teamLeadersGlobal = [];
     let todosLosVendedoresGlobal = [];
     let configuracionCampanasGlobal = {};
+    let vistaActualAgenda = 'tabla';
 
     function safeLower(v) { return (v || '').toString().toLowerCase(); }
     function setText(id, val) {
@@ -634,25 +675,21 @@
     function poblarSelectsCampanas() {
       const campanas = Object.keys(configuracionCampanasGlobal);
       
-      // Select filtro ventas
       const filtroCamp = document.getElementById('filtroCamp');
       if(filtroCamp) {
         filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => `<option>${c}</option>`).join('');
       }
 
-      // Select modal venta
       const vCamp = document.getElementById('vCampaña');
       if(vCamp) {
         vCamp.innerHTML = '<option>-- Seleccionar --</option>' + campanas.map(c => `<option>${c}</option>`).join('');
       }
 
-      // Select modal agenda
       const agCamp = document.getElementById('agCamp');
       if(agCamp) {
         agCamp.innerHTML = campanas.map(c => `<option>${c}</option>`).join('');
       }
 
-      // Select importación masiva
       const loteCamp = document.getElementById('loteCamp');
       if(loteCamp) {
         loteCamp.innerHTML = campanas.map(c => `<option>${c}</option>`).join('');
@@ -794,6 +831,12 @@
       setText('kpiInstaladas', instaladas);
       setText('kpiPendientes', pendientes);
       setText('kpiEfectividad', efectividad);
+
+      const metaDiaria = 3;
+      let porcentajeMeta = Math.min(100, (total / metaDiaria) * 100);
+      const barra = document.getElementById('barraProgresoMeta');
+      if(barra) barra.style.width = porcentajeMeta + '%';
+      setText('metaTextoProgreso', `Meta diaria: ${total} / ${metaDiaria} ventas`);
     }
 
     function verificarDuplicadoDNI() {
@@ -900,6 +943,23 @@
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
+      let linkAdjunto = r[11] || '';
+      let previsualizadorHTML = 'Sin adjunto';
+      if (linkAdjunto && linkAdjunto.includes('http')) {
+        let fileIdMatch = linkAdjunto.match(/\/d\/(.*?)\/|\?id=(.*?)(&|$)/);
+        let previewUrl = linkAdjunto;
+        if(fileIdMatch) {
+          let id = fileIdMatch[1] || fileIdMatch[2];
+          previewUrl = `https://drive.google.com/file/d/${id}/preview`;
+        }
+        previsualizadorHTML = `
+          <div style="margin-top: 6px;">
+            <a href="${linkAdjunto}" target="_blank" style="color:#3b82f6; font-weight:bold; display:block; margin-bottom:6px;">🔗 Abrir enlace en pestaña nueva</a>
+            <iframe src="${previewUrl}" width="100%" height="250px" style="border:1px solid #7f9db9; background:#fff;"></iframe>
+          </div>
+        `;
+      }
+
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
@@ -935,6 +995,11 @@
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[4] || ''} ${r[5] || ''}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[6] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[13] || '-'}</div>
+            </div>
+
+            <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
+              <b>📁 PREVISUALIZACIÓN DE DOCUMENTACIÓN (DNI / FACTURA):</b>
+              ${previsualizadorHTML}
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
@@ -1037,7 +1102,6 @@
             cerrarModales();
             cargarVentas();
             
-            // Disparar cartel emergente en vivo para Admin y TL
             if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
               mostrarAlertaNuevaVenta(datos, usuarioActual.nombre);
             }
@@ -1082,7 +1146,7 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, LEADS EN FRÍO Y DESCARTADOS
+    // GESTIÓN DE AGENDA, KANBAN, LEADS EN FRÍO Y DESCARTE CON COORDENADAS OBLIGATORIAS
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
@@ -1090,15 +1154,36 @@
         if(data.success) {
           agendaGlobal = data.rows;
           renderAgenda(agendaGlobal);
+          renderKanban(agendaGlobal);
         }
       } catch(e) {}
     }
 
-    function esLeadEnFrio(fechaStr, estado) {
+    function cambiarVistaAgenda(vista) {
+      vistaActualAgenda = vista;
+      const t = document.getElementById('contenedorVistaTabla');
+      const k = document.getElementById('contenedorVistaKanban');
+      const btnT = document.getElementById('btnVistaTabla');
+      const btnK = document.getElementById('btnVistaKanban');
+
+      if(vista === 'tabla') {
+        if(t) t.style.display = 'block';
+        if(k) k.style.display = 'none';
+        if(btnT) { btnT.style.background = 'var(--primary)'; btnT.style.color = '#fff'; }
+        if(btnK) { btnK.style.background = 'var(--surface-2)'; btnK.style.color = 'var(--ink)'; }
+      } else {
+        if(t) t.style.display = 'none';
+        if(k) k.style.display = 'block';
+        if(btnK) { btnK.style.background = 'var(--primary)'; btnK.style.color = '#fff'; }
+        if(btnT) { btnT.style.background = 'var(--surface-2)'; btnT.style.color = 'var(--ink)'; }
+      }
+    }
+
+    function esLeadEnFrio(fechaAsigStr, estado) {
       if (estado === 'VENDIDO' || estado === 'DESCARTADO') return false;
-      if (!fechaStr) return false;
+      if (!fechaAsigStr) return false;
       try {
-        const parts = fechaStr.toString().split(' ');
+        const parts = fechaAsigStr.toString().split(' ');
         const dateParts = parts[0].split('/');
         const timeParts = parts[1] ? parts[1].split(':') : [0,0];
         const d = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1]);
@@ -1124,28 +1209,61 @@
         let fechaRec = r[11] ? r[11].replace('T', ' ') : '-';
         let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
         
-        let enFrio = esLeadEnFrio(r[0], est);
+        let fechaSlaRef = r[13] || r[0];
+        let enFrio = esLeadEnFrio(fechaSlaRef, est);
         let rowStyle = enFrio ? 'background: rgba(239, 68, 68, 0.12); border-left: 3px solid var(--accent);' : '';
-        let frioBadge = enFrio ? `<br><span style="font-size:9px; color:#ef4444; font-weight:bold;">⚠️ EN FRÍO (>48h)</span>` : '';
-        let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Motivo: ${r[12]}</span>` : '';
+        let frioBadge = enFrio ? `<br><span style="font-size:9px; color:#ef4444; font-weight:bold;">⚠️ EN FRÍO (>48h sin gestión)</span>` : '';
+        let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Descarte: ${r[12]}</span>` : '';
 
         let telVal = r[8] || '';
         let whatsappBtn = telVal ? `<a href="https://wa.me/549${telVal.replace(/\D/g,'')}" target="_blank" style="margin-left:5px; text-decoration:none;" title="Abrir WhatsApp">💬</a>` : '';
+        let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">🗺️ ${r[6]}</a>` : 'N/A';
 
         return `<tr style="${rowStyle}">
           <td>${checkHTML}</td>
           <td>${r[0] || ''}</td>
           <td style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
           <td>${r[2] || ''}</td>
-          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${r[6] || 'N/A'}</span>${frioBadge}${motivoDesc}</td>
+          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
           <td>${telVal} ${whatsappBtn}</td>
           <td><strong>${r[7] || ''}</strong></td>
           <td><span class="nb-badge ${bClass}">${est}</span></td>
-          <td><button onclick="verDetalleAgenda(${idx})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+          <td><button onclick="verDetalleAgenda(${agendaGlobal.indexOf(r)})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
       }).join('');
       
       actualizarBarraMasiva();
+    }
+
+    function renderKanban(data) {
+      const colNuevos = document.getElementById('kanbanNuevos');
+      const colContactados = document.getElementById('kanbanContactados');
+      const colVendidos = document.getElementById('kanbanVendidos');
+      const colDescartados = document.getElementById('kanbanDescartados');
+      if(!colNuevos) return;
+
+      colNuevos.innerHTML = '';
+      colContactados.innerHTML = '';
+      colVendidos.innerHTML = '';
+      colDescartados.innerHTML = '';
+
+      data.forEach((r, idx) => {
+        let est = (r[10] || 'NUEVO').toUpperCase();
+        let cardHTML = `
+          <div class="kanban-card" onclick="verDetalleAgenda(${idx})">
+            <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${r[3]} ${r[4]}</div>
+            <div style="font-size:10px; color:var(--ink-soft);">DNI: ${r[2]} | Tel: ${r[8]}</div>
+            <div style="font-size:10px; margin-top:4px;">📍 ${r[5] || 'Sin dir'}</div>
+            <div style="font-size:9px; margin-top:6px; color:#888;">Asignado: ${r[7]}</div>
+          </div>
+        `;
+
+        if(est === 'NUEVO') colNuevos.innerHTML += cardHTML;
+        else if(est === 'CONTACTADO') colContactados.innerHTML += cardHTML;
+        else if(est === 'VENDIDO') colVendidos.innerHTML += cardHTML;
+        else if(est === 'DESCARTADO') colDescartados.innerHTML += cardHTML;
+        else colNuevos.innerHTML += cardHTML;
+      });
     }
 
     function filtrarLlamadosHoy() {
@@ -1156,12 +1274,14 @@
         return rec.startsWith(hoyStr) && est !== 'VENDIDO' && est !== 'DESCARTADO';
       });
       renderAgenda(filtrados);
-      showToast(`Mostrando ${filtrados.length} llamados programados para hoy`, 'info');
+      renderKanban(filtrados);
+      showToast(`Mostrando ${filtrados.length} llamados para hoy`, 'info');
     }
 
     function filtrarLeadsEnFrio() {
-      const filtrados = agendaGlobal.filter(r => esLeadEnFrio(r[0], r[10]));
+      const filtrados = agendaGlobal.filter(r => esLeadEnFrio(r[13] || r[0], r[10]));
       renderAgenda(filtrados);
+      renderKanban(filtrados);
       showToast(`Mostrando ${filtrados.length} leads en frío (>48h sin gestión)`, 'error');
     }
 
@@ -1287,11 +1407,12 @@
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[7].toLowerCase()?'selected':''}>${v}</option>`).join('');
       let estadoActual = r[10] || 'NUEVO';
+      let motivoActual = r[12] || 'NO LE INTERESA';
 
       const html = `
         <div style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 16px; border-radius: 6px; font-size: 12px;">
           <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
-          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'} | <b>GPS:</b> ${r[6] || 'N/A'}</div>
+          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'} | <b>GPS:</b> <a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">${r[6] || 'N/A'}</a></div>
           <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[8]}</div>
           <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${r[7]}</div>
           
@@ -1318,13 +1439,19 @@
             </select>
           </div>
 
+          <!-- CONTENEDOR MOTIVO DE DESCARTE Y COORDENADAS OBLIGATORIAS -->
           <div id="containerMotivoDescarte" style="margin-bottom: 10px; display: ${estadoActual==='DESCARTADO'?'block':'none'}; background: rgba(239,68,68,0.1); padding: 8px; border: 1px solid var(--accent);">
             <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight:bold;">MOTIVO DE DESCARTE *</label>
-            <select id="agMotivoDescarte" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
-              <option value="NO LE INTERESA" ${r[12]==='NO LE INTERESA'?'selected':''}>NO LE INTERESA</option>
-              <option value="SIN COBERTURA" ${r[12]==='SIN COBERTURA'?'selected':''}>SIN COBERTURA</option>
-              <option value="SATURADO" ${r[12]==='SATURADO'?'selected':''}>SATURADO</option>
+            <select id="agMotivoDescarte" onchange="toggleCoordenadasObligatorias()" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555; margin-bottom: 8px;">
+              <option value="NO LE INTERESA" ${motivoActual==='NO LE INTERESA'?'selected':''}>NO LE INTERESA</option>
+              <option value="SIN COBERTURA" ${motivoActual==='SIN COBERTURA'?'selected':''}>SIN COBERTURA</option>
+              <option value="SATURADO" ${motivoActual==='SATURADO'?'selected':''}>SATURADO</option>
             </select>
+
+            <div id="containerCoordsObligatorias" style="display: ${ (motivoActual==='SIN COBERTURA' || motivoActual==='SATURADO') ? 'block' : 'none' };">
+              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS (Requerido por Sin Cobertura / Saturado) *</label>
+              <input type="text" id="agDescarteCoordsInput" value="${r[6] || ''}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
+            </div>
           </div>
 
           <div style="margin-bottom: 10px;">
@@ -1351,18 +1478,33 @@
       const est = document.getElementById('agNuevoEstado').value;
       const cont = document.getElementById('containerMotivoDescarte');
       if(cont) cont.style.display = est === 'DESCARTADO' ? 'block' : 'none';
+      if(est === 'DESCARTADO') toggleCoordenadasObligatorias();
+    }
+
+    function toggleCoordenadasObligatorias() {
+      const motivo = document.getElementById('agMotivoDescarte').value;
+      const contCoords = document.getElementById('containerCoordsObligatorias');
+      if(contCoords) {
+        contCoords.style.display = (motivo === 'SIN COBERTURA' || motivo === 'SATURADO') ? 'block' : 'none';
+      }
     }
 
     async function guardarSeguimientoAgenda(doc) {
       const nuevoEst = document.getElementById('agNuevoEstado').value;
       const motivoDesc = document.getElementById('agMotivoDescarte') ? document.getElementById('agMotivoDescarte').value : '';
+      const coordsInput = document.getElementById('agDescarteCoordsInput') ? document.getElementById('agDescarteCoordsInput').value.trim() : '';
       const comentario = document.getElementById('agNuevoComentario').value.trim();
       const nuevaRec = document.getElementById('agNuevoRecordatorio').value;
+
+      if (nuevoEst === 'DESCARTADO' && (motivoDesc === 'SIN COBERTURA' || motivoDesc === 'SATURADO') && !coordsInput) {
+        showToast('⚠️ Las coordenadas son obligatorias para descarte por Sin Cobertura o Saturado.', 'error');
+        return;
+      }
 
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, coordsDescarte: coordsInput, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
@@ -1375,7 +1517,7 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, coordsDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
