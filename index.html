@@ -434,6 +434,7 @@ const GAS_URL = 'https://kipseik.github.io/crmventas/'; // Para guardar ventas
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
    // ===== LOGIN CON GOOGLE SHEETS API =====
+// ===== LOGIN CON APPS SCRIPT =====
 async function hacerLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
@@ -450,50 +451,31 @@ async function hacerLogin() {
   err.textContent = '';
 
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
-    const res = await fetch(url);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Verificá que la hoja sea pública`);
-    }
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'loginUsuario',
+        email: email,
+        pass: pass
+      })
+    });
     
     const data = await res.json();
 
-    if(!data.values) throw new Error('No se pudo leer la hoja Usuarios');
-
-    const headers = data.values[0];
-    const idxEmail = headers.indexOf('Usuario/Email');
-    const idxPass = headers.indexOf('Pass');
-    const idxEstado = headers.indexOf('Estado');
-
-    const userRow = data.values.slice(1).find(row => 
-      row[idxEmail]?.toLowerCase() === email.toLowerCase() && 
-      row[idxEstado] === 'ACTIVO' &&
-      row[idxPass] === pass
-    );
-
-    if(userRow) {
-      usuarioActual = {
-        nombre: userRow[0],
-        email: userRow[1],
-        rol: userRow[2],
-        leader: userRow[3],
-        turno: userRow[4]
-      };
+    if(data.success) {
+      usuarioActual = data.user;
       sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
       mostrarApp();
     } else {
-      err.textContent = 'Usuario o contraseña incorrectos';
+      err.textContent = data.error;
     }
   } catch(e) {
-    err.textContent = 'Error: ' + e.message;
-    console.error('Login error:', e);
+    err.textContent = 'Error de conexión: ' + e.message;
   }
 
   btn.textContent = 'INGRESAR';
   btn.disabled = false;
 }
-
     function cerrarSesion() {
       sessionStorage.removeItem('paces_user');
       location.reload();
