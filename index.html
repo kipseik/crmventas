@@ -433,60 +433,66 @@ const GAS_URL = 'PEGÁ_TU_WEB_APP_URL_DE_APPS_SCRIPT_AQUÍ'; // Para guardar ven
     const PRODUCTOS_FIBRA = ['300 Megas','300mb + tv dig + 1 deco','300mb + tv dig.. sin deco','600 Megas','600mb + tv dig + 1 deco','600mb + tv dig.. sin deco','1000 Megas','GIGA + tv dig + 1 deco','GIGA + tv dig.. sin deco'];
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
-    // ===== LOGIN CON GOOGLE SHEETS API =====
-    async function hacerLogin() {
-      const email = document.getElementById('loginEmail').value.trim();
-      const pass = document.getElementById('loginPass').value.trim();
-      const btn = document.getElementById('btnLogin');
-      const err = document.getElementById('loginError');
+   // ===== LOGIN CON GOOGLE SHEETS API =====
+async function hacerLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const btn = document.getElementById('btnLogin');
+  const err = document.getElementById('loginError');
 
-      if(!email ||!pass) {
-        err.textContent = 'Completá email y contraseña';
-        return;
-      }
+  if(!email ||!pass) {
+    err.textContent = 'Completá email y contraseña';
+    return;
+  }
 
-      btn.textContent = 'Ingresando...';
-      btn.disabled = true;
-      err.textContent = '';
+  btn.textContent = 'Ingresando...';
+  btn.disabled = true;
+  err.textContent = '';
 
-      try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if(!data.values) throw new Error('No se pudo leer la hoja Usuarios');
-
-        const headers = data.values[0];
-        const idxEmail = headers.indexOf('Usuario/Email');
-        const idxPass = headers.indexOf('Pass');
-        const idxEstado = headers.indexOf('Estado');
-
-        const userRow = data.values.slice(1).find(row =>
-          row[idxEmail]?.toLowerCase() === email.toLowerCase() &&
-          row[idxEstado] === 'ACTIVO' &&
-          row[idxPass] === pass
-        );
-
-        if(userRow) {
-          usuarioActual = {
-            nombre: userRow[0],
-            email: userRow[1],
-            rol: userRow[2],
-            leader: userRow[3],
-            turno: userRow[4]
-          };
-          sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
-          mostrarApp();
-        } else {
-          err.textContent = 'Usuario o contraseña incorrectos';
-        }
-      } catch(e) {
-        err.textContent = 'Error de conexión: ' + e.message;
-      }
-
-      btn.textContent = 'INGRESAR';
-      btn.disabled = false;
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Usuarios?key=${API_KEY}`;
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Verificá que la hoja sea pública`);
     }
+    
+    const data = await res.json();
+
+    if(!data.values) throw new Error('No se pudo leer la hoja Usuarios');
+
+    const headers = data.values[0];
+    const idxEmail = headers.indexOf('Usuario/Email');
+    const idxPass = headers.indexOf('Pass');
+    const idxEstado = headers.indexOf('Estado');
+
+    const userRow = data.values.slice(1).find(row => 
+      row[idxEmail]?.toLowerCase() === email.toLowerCase() && 
+      row[idxEstado] === 'ACTIVO' &&
+      row[idxPass] === pass
+    );
+
+    if(userRow) {
+      usuarioActual = {
+        nombre: userRow[0],
+        email: userRow[1],
+        rol: userRow[2],
+        leader: userRow[3],
+        turno: userRow[4]
+      };
+      sessionStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+      mostrarApp();
+    } else {
+      err.textContent = 'Usuario o contraseña incorrectos';
+    }
+  } catch(e) {
+    err.textContent = 'Error: ' + e.message;
+    console.error('Login error:', e);
+  }
+
+  btn.textContent = 'INGRESAR';
+  btn.disabled = false;
+}
 
     function cerrarSesion() {
       sessionStorage.removeItem('paces_user');
