@@ -91,7 +91,7 @@
       <span class="nb-brand">PACES</span>
       <div class="nb-nav-links">
         <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
-        <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Leads</a>
+        <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Contactos</a>
         <a class="nb-nav-link" onclick="navTo('sec-reportes', this)">📊 Reportes</a>
         <a class="nb-nav-link" onclick="navTo('sec-usuarios', this)" id="linkUsuarios" style="display:none">Usuarios</a>
       </div>
@@ -169,21 +169,36 @@
         </div>
       </div>
 
-      <!-- SECCIÓN AGENDA / LEADS -->
+      <!-- SECCIÓN AGENDA / CONTACTOS -->
       <div id="sec-agenda" class="page-section" style="display: none;">
         <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 GESTIÓN DE AGENDA Y CONTACTOS (LEADS)</div>
-            <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto / Lead</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 13px; font-weight: bold; color: var(--primary);">📅 AGENDA Y LLAMADOS DE SEGUIMIENTO</div>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="filtrarLlamadosHoy()" id="btnFiltroHoy" class="nb-btn nb-btn-sm" style="background: #f59e0b; color: #000; font-weight: bold;">🔔 Llamados de Hoy</button>
+              <button onclick="cargarAgenda()" class="nb-btn nb-btn-sm">Ver Todos</button>
+              <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto</button>
+            </div>
           </div>
-          <div style="font-size: 11px; color: var(--ink-soft);">Aquí puedes registrar prospectos, agregar comentarios de seguimiento y convertirlos directamente en venta. Los administradores y Team Leaders pueden reasignar contactos a otros vendedores.</div>
+          
+          <!-- BARRA DE ASIGNACIÓN MASIVA (ADMIN / TL) -->
+          <div id="barraMasiva" style="display: none; background: #2d2d2d; padding: 8px; border-radius: 4px; margin-top: 10px; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span id="contadorSeleccionados" style="font-size: 11px; font-weight: bold; color: #10b981;">0 seleccionados</span>
+            <select id="loteNuevoVendedor" style="padding: 4px; font-size: 11px; background: #1a1a1a; color: #fff; border: 1px solid #555; width: 200px;"></select>
+            <button onclick="ejecutarAsignacionMasiva()" class="nb-btn nb-btn-sm nb-btn-primary" style="font-weight: bold;">📦 Reasignar Lote Seleccionado</button>
+          </div>
         </div>
 
         <div class="nb-window">
           <div style="overflow-x: auto; max-height: 550px;">
             <table class="nb-table">
-              <thead><tr><th>Fecha</th><th>Campaña</th><th>Documento</th><th>Nombre</th><th>Teléfono</th><th>Vendedor Asignado</th><th>Estado</th><th>Acciones</th></tr></thead>
-              <tbody id="tablaAgenda"><tr><td colspan="8"><div class="loader"></div></td></tr></tbody>
+              <thead>
+                <tr>
+                  <th style="width: 30px;"><input type="checkbox" id="checkTodos" onclick="toggleSeleccionarTodos(this)"></th>
+                  <th>Fecha</th><th>Recordatorio</th><th>Documento</th><th>Nombre / Dirección</th><th>Teléfono</th><th>Vendedor</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaAgenda"><tr><td colspan="9"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -383,7 +398,7 @@
     </div>
   </div>
 
-  <!-- MODAL AGENDA / LEAD NUEVO -->
+  <!-- MODAL AGENDA / CONTACTO NUEVO -->
   <div id="modalAgenda" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div style="background: #000; width: 100%; max-width: 450px; border: 2px solid #333;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
@@ -393,9 +408,10 @@
       <div style="padding: 16px; background: #000; color: #c0c0c0; font-size: 11px;">
         <div style="margin-bottom:10px;"><label>Campaña</label><select id="agCamp" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"><option>Movistar Fibra Optica</option><option>Movistar Portabilidad</option></select></div>
         <div style="margin-bottom:10px;"><label>Documento (DNI) *</label><input type="text" id="agDoc" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
-        <div style="margin-bottom:10px;"><label>Nombre *</label><input type="text" id="agNombre" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
-        <div style="margin-bottom:10px;"><label>Apellido</label><input type="text" id="agApellido" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>Nombre Completo *</label><input type="text" id="agNombre" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>Dirección *</label><input type="text" id="agDir" placeholder="Ej: Av. Corrientes 1234, CABA" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
         <div style="margin-bottom:10px;"><label>Teléfono *</label><input type="text" id="agTel" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
+        <div style="margin-bottom:10px;"><label>📅 Fecha y Hora de Próximo Recordatorio</label><input type="datetime-local" id="agRecordatorio" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></div>
         <div id="containerAsignarVendedor" style="margin-bottom:10px; display:none;"><label>Asignar a Vendedor</label><select id="agVendedor" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></select></div>
         <div style="margin-bottom:10px;"><label>Comentarios / Notas</label><textarea id="agComentarios" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555; min-height:50px;"></textarea></div>
       </div>
@@ -453,15 +469,18 @@
     const PRODUCTOS_PORTA = ['4GB', '8GB', '15GB', '30GB', '50GB'];
 
     function safeLower(v) { return (v || '').toString().toLowerCase(); }
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
 
     async function hacerLogin() {
       const email = document.getElementById('loginEmail').value.trim();
       const pass = document.getElementById('loginPass').value.trim();
       const btn = document.getElementById('btnLogin');
-      const err = document.getElementById('loginError');
 
-      if(!email || !pass) { err.textContent = 'Completá email y contraseña'; return; }
-      btn.textContent = 'Ingresando...'; btn.disabled = true; err.textContent = '';
+      if(!email || !pass) { setText('loginError', 'Completá email y contraseña'); return; }
+      btn.textContent = 'Ingresando...'; btn.disabled = true; setText('loginError', '');
 
       try {
         const res = await fetch(GAS_URL, {
@@ -473,8 +492,8 @@
           usuarioActual = data.user;
           localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
           mostrarApp();
-        } else { err.textContent = data.error; }
-      } catch(e) { err.textContent = 'Error de conexión: ' + e.message; }
+        } else { setText('loginError', data.error); }
+      } catch(e) { setText('loginError', 'Error de conexión: ' + e.message); }
       btn.textContent = 'INGRESAR'; btn.disabled = false;
     }
 
@@ -484,7 +503,7 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
       usuarioActual = JSON.parse(localStorage.getItem('paces_user'));
-      document.getElementById('userInfo').textContent = `${usuarioActual.nombre} | ${usuarioActual.rol}`;
+      setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         document.getElementById('linkUsuarios').style.display = 'flex';
       }
@@ -503,8 +522,11 @@
     }
 
     function showError(msg) {
-      document.getElementById('errorGlobal').innerHTML = `<div class="error-box"><strong>ERROR:</strong> ${msg}</div>`;
-      document.getElementById('errorGlobal').style.display = 'block';
+      const errEl = document.getElementById('errorGlobal');
+      if(errEl) {
+        errEl.innerHTML = `<div class="error-box"><strong>ERROR:</strong> ${msg}</div>`;
+        errEl.style.display = 'block';
+      }
     }
 
     function navTo(sectionId, element) {
@@ -518,11 +540,10 @@
     }
 
     function cerrarModales() {
-      document.getElementById('modalVenta').style.display = 'none';
-      document.getElementById('modalUsuario').style.display = 'none';
-      document.getElementById('modalDetalleVenta').style.display = 'none';
-      document.getElementById('modalAgenda').style.display = 'none';
-      document.getElementById('modalDetalleAgenda').style.display = 'none';
+      ['modalVenta', 'modalUsuario', 'modalDetalleVenta', 'modalAgenda', 'modalDetalleAgenda'].forEach(id => {
+        const m = document.getElementById(id);
+        if(m) m.style.display = 'none';
+      });
     }
 
     function cambiarCampaña() {
@@ -572,6 +593,12 @@
         if(data.success) {
           teamLeadersGlobal = data.teamLeaders || [];
           todosLosVendedoresGlobal = data.allUsers || [];
+          
+          // Poblar selector masivo de la agenda si es Admin/TL
+          const loteSel = document.getElementById('loteNuevoVendedor');
+          if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
+            loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+          }
         }
       } catch(e) {}
     }
@@ -595,21 +622,21 @@
       const pendientes = misVentas.filter(r => (r[7] || '').toUpperCase() === 'PENDIENTE').length;
       const efectividad = total > 0 ? ((instaladas / total) * 100).toFixed(1) + '%' : '0%';
 
-      document.getElementById('kpiTotal').textContent = total;
-      document.getElementById('kpiInstaladas').textContent = instaladas;
-      document.getElementById('kpiPendientes').textContent = pendientes;
-      document.getElementById('kpiEfectividad').textContent = efectividad;
+      setText('kpiTotal', total);
+      setText('kpiInstaladas', instaladas);
+      setText('kpiPendientes', pendientes);
+      setText('kpiEfectividad', efectividad);
     }
 
     function verificarDuplicadoDNI() {
-      const dni = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc').value.trim();
+      const dni = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
       const alerta = document.getElementById('alertaDuplicado');
-      if(!dni) { alerta.style.display = 'none'; return; }
+      if(!dni) { if(alerta) alerta.style.display = 'none'; return; }
       const duplicado = todasLasVentas.find(r => r[2].toString().trim() === dni);
-      if(duplicado) {
+      if(duplicado && alerta) {
         alerta.style.display = 'block';
         alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[5]} (${duplicado[7] || 'PENDIENTE'}).`;
-      } else { alerta.style.display = 'none'; }
+      } else if(alerta) { alerta.style.display = 'none'; }
     }
 
     function aplicarFiltrosAvanzados() {
@@ -628,11 +655,12 @@
       });
 
       renderVentas(filtradas);
-      document.getElementById('contadorVentas').textContent = `${filtradas.length} ventas encontradas`;
+      setText('contadorVentas', `${filtradas.length} ventas encontradas`);
     }
 
     function renderVentas(data) {
       const tbody = document.getElementById('tablaVentas');
+      if(!tbody) return;
       if(data.length === 0) {
         tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin ventas registradas</td></tr>";
         return;
@@ -702,7 +730,6 @@
       let nroOrdenActual = r[21] || '';
       let vendedorActual = r[5] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
-
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
       const html = `
@@ -800,7 +827,7 @@
       const apellido = document.getElementById('vApellido').value.trim();
       if(!doc || !nombre || !apellido) { showToast('Completá Documento, Nombre y Apellido', 'error'); return; }
 
-      btn.innerText = "Guardando..."; btn.disabled = true;
+      if(btn) { btn.innerText = "Guardando..."; btn.disabled = true; }
       const metodo = document.getElementById('vMetodoPago').value;
       const datosTarjetaVal = metodo === 'TARJETA' ? document.getElementById('vDatosTarjeta').value : 'EFECTIVO';
 
@@ -831,10 +858,10 @@
             body: JSON.stringify({action: 'guardarVenta', userEmail: usuarioActual.email, data: datos})
           });
           const result = await res.json();
-          btn.innerText = "Guardar"; btn.disabled = false;
+          if(btn) { btn.innerText = "Guardar"; btn.disabled = false; }
           if(result.success) { showToast(result.msg); cerrarModales(); cargarVentas(); }
           else { showToast(result.error, 'error'); }
-        } catch(err) { btn.innerText = "Guardar"; btn.disabled = false; showToast('Error: ' + err.message, 'error'); }
+        } catch(err) { if(btn) { btn.innerText = "Guardar"; btn.disabled = false; } showToast('Error: ' + err.message, 'error'); }
       };
 
       if(files.length > 0) {
@@ -844,7 +871,20 @@
       } else { enviar(d); }
     }
 
-    // GESTIÓN DE AGENDA / LEADS Y CONTACTOS
+    function limpiarFormVenta() {
+      ['vBuscarDNI','vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.value = '';
+      });
+      document.getElementById('alertaDuplicado').style.display = 'none';
+      document.getElementById('vCampaña').selectedIndex = 0;
+      document.getElementById('vProducto').innerHTML = '<option>-- Seleccionar --</option>';
+      document.getElementById('vProv').selectedIndex = 0;
+      document.getElementById('vMetodoPago').selectedIndex = 0;
+      document.getElementById('containerTarjeta').style.display = 'none';
+      document.getElementById('vTipoLineaContainer').style.display = 'none';
+    }
+
+    // AGENDA Y LEADS CON RECORDATORIOS Y ASIGNACIÓN MASIVA
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
@@ -858,33 +898,96 @@
 
     function renderAgenda(data) {
       const tbody = document.getElementById('tablaAgenda');
+      if(!tbody) return;
       if(data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;padding:30px;color:var(--ink-soft)'>No hay contactos en la agenda</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;padding:30px;color:var(--ink-soft)'>No hay contactos en la agenda</td></tr>";
         return;
       }
+      let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
+      
       tbody.innerHTML = data.map((r, idx) => {
-        let est = r[8] || 'NUEVO';
+        let est = r[9] || 'NUEVO';
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : 'nb-badge-yellow');
+        let fechaRec = r[10] ? r[10].replace('T', ' ') : '-';
+        let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
+
         return `<tr>
-          <td>${r[0] || ''}</td><td>${r[1] || ''}</td><td>${r[2] || ''}</td>
-          <td>${r[3] || ''} ${r[4] || ''}</td><td>${r[6] || ''}</td>
-          <td><strong>${r[5] || ''}</strong></td>
+          <td>${checkHTML}</td>
+          <td>${r[0] || ''}</td>
+          <td style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
+          <td>${r[2] || ''}</td>
+          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">${r[5] || ''}</span></td>
+          <td>${r[7] || ''}</td>
+          <td><strong>${r[6] || ''}</strong></td>
           <td><span class="nb-badge ${bClass}">${est}</span></td>
           <td><button onclick="verDetalleAgenda(${idx})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
       }).join('');
+      
+      actualizarBarraMasiva();
+    }
+
+    function filtrarLlamadosHoy() {
+      const hoyStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const filtrados = agendaGlobal.filter(r => {
+        let rec = r[10] ? r[10].toString() : '';
+        let est = r[9] || 'NUEVO';
+        return rec.startsWith(hoyStr) && est !== 'VENDIDO' && est !== 'DESCARTADO';
+      });
+      renderAgenda(filtrados);
+      showToast(`Mostrando ${filtrados.length} llamados programados para hoy`, 'info');
+    }
+
+    function toggleSeleccionarTodos(source) {
+      const checkboxes = document.querySelectorAll('.checkAgenda');
+      checkboxes.forEach(cb => cb.checked = source.checked);
+      actualizarBarraMasiva();
+    }
+
+    function actualizarBarraMasiva() {
+      const seleccionados = document.querySelectorAll('.checkAgenda:checked');
+      const barra = document.getElementById('barraMasiva');
+      if(seleccionados.length > 0) {
+        if(barra) barra.style.display = 'flex';
+        setText('contadorSeleccionados', `${seleccionados.length} seleccionados`);
+      } else {
+        if(barra) barra.style.display = 'none';
+      }
+    }
+
+    async function ejecutarAsignacionMasiva() {
+      const seleccionados = Array.from(document.querySelectorAll('.checkAgenda:checked')).map(cb => cb.value);
+      const nuevoVend = document.getElementById('loteNuevoVendedor').value;
+      if(seleccionados.length === 0 || !nuevoVend) return;
+
+      if(!confirm(`¿Reasignar ${seleccionados.length} contactos seleccionados a ${nuevoVend}?`)) return;
+
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'reasignarLoteAgenda', docs: seleccionados, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
+        });
+        const data = await res.json();
+        if(data.success) {
+          showToast(data.msg);
+          document.getElementById('checkTodos').checked = false;
+          cargarAgenda();
+        } else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error en asignación masiva', 'error'); }
     }
 
     function abrirModalAgenda() {
-      ['agDoc','agNombre','agApellido','agTel','agComentarios'].forEach(id => document.getElementById(id).value = '');
+      ['agDoc','agNombre','agDir','agTel','agComentarios','agRecordatorio'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.value = '';
+      });
       const containerAsignar = document.getElementById('containerAsignarVendedor');
       const selectVend = document.getElementById('agVendedor');
       
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
-        containerAsignar.style.display = 'block';
-        selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+        if(containerAsignar) containerAsignar.style.display = 'block';
+        if(selectVend) selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
       } else {
-        containerAsignar.style.display = 'none';
+        if(containerAsignar) containerAsignar.style.display = 'none';
       }
       document.getElementById('modalAgenda').style.display = 'flex';
     }
@@ -892,13 +995,15 @@
     async function guardarContactoAgenda() {
       const doc = document.getElementById('agDoc').value.trim();
       const nombre = document.getElementById('agNombre').value.trim();
+      const direccion = document.getElementById('agDir').value.trim();
       const tel = document.getElementById('agTel').value.trim();
-      if(!doc || !nombre || !tel) { showToast('Completá Documento, Nombre y Teléfono', 'error'); return; }
+      if(!doc || !nombre || !tel || !direccion) { showToast('Completá DNI, Nombre, Dirección y Teléfono', 'error'); return; }
 
       const d = {
         campana: document.getElementById('agCamp').value,
-        documento: doc, nombre: nombre, apellido: document.getElementById('agApellido').value.trim(),
+        documento: doc, nombre: nombre, direccion: direccion,
         telefono: tel, comentarios: document.getElementById('agComentarios').value.trim(),
+        fechaRec: document.getElementById('agRecordatorio').value,
         vendedor: ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol) ? document.getElementById('agVendedor').value : usuarioActual.nombre
       };
 
@@ -913,13 +1018,14 @@
     function verDetalleAgenda(idx) {
       const r = agendaGlobal[idx];
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
-      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[5].toLowerCase()?'selected':''}>${v}</option>`).join('');
+      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[6].toLowerCase()?'selected':''}>${v}</option>`).join('');
 
       const html = `
         <div style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 16px; border-radius: 6px; font-size: 12px;">
-          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Seguimiento Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
-          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[6]}</div>
-          <div style="margin-bottom: 8px;"><b>Vendedor Asignado Actual:</b> ${r[5]}</div>
+          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
+          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'}</div>
+          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[7]}</div>
+          <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${r[6]}</div>
           
           ${esAdminTL ? `
             <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
@@ -930,12 +1036,17 @@
           ` : ''}
 
           <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">📅 FECHA Y HORA DE PRÓXIMO RECORDATORIO:</label>
+            <input type="datetime-local" id="agNuevoRecordatorio" value="${r[10] || ''}" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
+          </div>
+
+          <div style="margin-bottom: 10px;">
             <label style="display:block; margin-bottom: 4px;">ESTADO:</label>
             <select id="agNuevoEstado" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
-              <option value="NUEVO" ${r[8]==='NUEVO'?'selected':''}>NUEVO</option>
-              <option value="CONTACTADO" ${r[8]==='CONTACTADO'?'selected':''}>CONTACTADO</option>
-              <option value="DESCARTADO" ${r[8]==='DESCARTADO'?'selected':''}>DESCARTADO</option>
-              <option value="VENDIDO" ${r[8]==='VENDIDO'?'selected':''}>VENDIDO</option>
+              <option value="NUEVO" ${r[9]==='NUEVO'?'selected':''}>NUEVO</option>
+              <option value="CONTACTADO" ${r[9]==='CONTACTADO'?'selected':''}>CONTACTADO</option>
+              <option value="DESCARTADO" ${r[9]==='DESCARTADO'?'selected':''}>DESCARTADO</option>
+              <option value="VENDIDO" ${r[9]==='VENDIDO'?'selected':''}>VENDIDO</option>
             </select>
           </div>
 
@@ -945,7 +1056,7 @@
           </div>
 
           <div style="background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 12px; max-height: 100px; overflow-y: auto; font-family: monospace; font-size: 11px;">
-            <b>Historial de Comentarios:</b><br>${r[7] || 'Sin comentarios'}
+            <b>Historial de Comentarios:</b><br>${r[8] || 'Sin comentarios'}
           </div>
 
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
@@ -962,11 +1073,12 @@
     async function guardarSeguimientoAgenda(doc) {
       const nuevoEst = document.getElementById('agNuevoEstado').value;
       const comentario = document.getElementById('agNuevoComentario').value.trim();
+      const nuevaRec = document.getElementById('agNuevoRecordatorio').value;
 
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, comentarios: comentario, nuevoVendedor: null, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
@@ -979,7 +1091,7 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
@@ -1010,14 +1122,16 @@
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getReportesAvanzados', mesFiltro: mesFiltro}) });
         const data = await res.json();
         if(data.success) {
-          document.getElementById('repMesActual').textContent = mesFiltro || 'General';
-          document.getElementById('repInstaladas').textContent = data.instaladas || 0;
-          document.getElementById('repClusterC').textContent = data.clusterC || 0;
-          document.getElementById('repCash').textContent = data.cash || 0;
-          document.getElementById('repCancelado').textContent = data.cancelado || 0;
-          document.getElementById('repPendientes').textContent = data.pendientes || 0;
+          setText('repMesActual', mesFiltro || 'General');
+          setText('repUltimaAct', data.fechaActualizacion || '-');
+          setText('repInstaladas', data.instaladas || 0);
+          setText('repClusterC', data.clusterC || 0);
+          setText('repCash', data.cash || 0);
+          setText('repCancelado', data.cancelado || 0);
+          setText('repPendientes', data.pendientes || 0);
 
           const tbody = document.getElementById('tablaRanking');
+          if(!tbody) return;
           if(data.ranking.length === 0) {
             tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Sin datos</td></tr>";
           } else {
@@ -1042,10 +1156,13 @@
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email}) });
         const data = await res.json();
         const tbody = document.getElementById('tablaUsuarios');
+        if(!tbody) return;
         if(data.success) {
           teamLeadersGlobal = data.teamLeaders || [];
           const selectTL = document.getElementById('uLeader');
-          selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${tl}">${tl}</option>`).join('');
+          if(selectTL) {
+            selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${tl}">${tl}</option>`).join('');
+          }
 
           tbody.innerHTML = data.rows.map(r => `
             <tr>
@@ -1063,13 +1180,17 @@
     }
 
     function abrirModalUsuario() {
-      document.getElementById('uTitulo').innerText = "○ CREAR USUARIO";
-      ['uOriginal','uNombre','uUser','uPass','uLeader'].forEach(id => document.getElementById(id).value = '');
+      const titleEl = document.getElementById('uTitulo');
+      if(titleEl) titleEl.innerText = "○ CREAR USUARIO";
+      ['uOriginal','uNombre','uUser','uPass','uLeader'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.value = '';
+      });
       document.getElementById('modalUsuario').style.display = 'flex';
     }
 
     function editarUser(nombre, user, rol, leader, turno, estado) {
-      document.getElementById('uTitulo').innerText = "○ EDITAR USUARIO";
+      const titleEl = document.getElementById('uTitulo');
+      if(titleEl) titleEl.innerText = "○ EDITAR USUARIO";
       document.getElementById('uOriginal').value = user;
       document.getElementById('uNombre').value = nombre;
       document.getElementById('uUser').value = user;
