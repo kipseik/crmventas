@@ -624,7 +624,6 @@
         const btnImp = document.getElementById('btnImportarLote');
         if(btnImp) btnImp.style.display = 'inline-block';
         
-        // Cargar lista global de usuarios solo si es Admin o Team Leader
         cargarListaUsuariosGlobales();
       }
       cargarConfigCampanas();
@@ -936,9 +935,9 @@
         showToast('No hay ventas para descargar', 'error'); return;
       }
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Fecha,Campaña,Segmento,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden\r\n";
+      csvContent += "Fecha,Campaña,Segmento,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden,AgenteProveedor\r\n";
       datosParaExportar.forEach(r => {
-        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[22] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
+        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[22] || '', r[23] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
         csvContent += fila + "\r\n";
       });
       const encodedUri = encodeURI(csvContent);
@@ -952,6 +951,7 @@
       const r = todasLasVentas[idx];
       let est = r[8] || "PENDIENTE";
       let nroOrdenActual = r[22] || '';
+      let agenteProvActual = r[23] || '';
       let vendedorActual = r[6] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
@@ -980,7 +980,7 @@
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
-          <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-weight: bold;">ESTADO:</span>
             <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <option value="PENDIENTE" ${est==='PENDIENTE'?'selected':''}>PENDIENTE</option>
@@ -991,11 +991,14 @@
             
             ${esAdminTL ? `
               <span style="font-size: 11px; font-weight: bold;">NRO ORDEN:</span>
-              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 80px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <span style="font-size: 11px; font-weight: bold;">AGENTE / PROV:</span>
+              <input type="text" id="detalleAgenteProveedor" value="${agenteProvActual}" placeholder="Ej: Damatec" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <span style="font-size: 11px; font-weight: bold;">VENDEDOR:</span>
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
               <button onclick="guardarCambiosVentaAdminTL('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
+              <span style="font-size: 11px; font-weight: bold;">AGENTE / PROV:</span> <span style="font-weight:bold; color:#1e40af;">${agenteProvActual || 'No asignado'}</span>
               <button onclick="actualizarEstadoSolo('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
@@ -1007,7 +1010,7 @@
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[3] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[4] || ''} ${r[5] || ''}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[6] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>TELÉFONO:</b> ${r[13] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>AGENTE / PROVEEDOR DE CARGA:</b> <span style="color:#000080; font-weight:bold;">${agenteProvActual || 'No definido'}</span></div>
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
@@ -1032,17 +1035,18 @@
     }
 
     async function actualizarEstadoSolo(doc) {
-      enviarAccionServidor(doc, document.getElementById('detalleNuevoEstado').value, null, null);
+      enviarAccionServidor(doc, document.getElementById('detalleNuevoEstado').value, null, null, null);
     }
     async function actualizarObs(doc) {
-      enviarAccionServidor(doc, null, document.getElementById('detalleObs').value, null);
+      enviarAccionServidor(doc, null, document.getElementById('detalleObs').value, null, null);
     }
     async function guardarCambiosVentaAdminTL(doc) {
       const nuevoEst = document.getElementById('detalleNuevoEstado').value;
       const nuevoOrden = document.getElementById('detalleNroOrden').value;
+      const nuevoAgenteProv = document.getElementById('detalleAgenteProveedor').value.trim();
       const nuevoVend = document.getElementById('detalleNuevoVendedor').value;
 
-      await enviarAccionServidor(doc, nuevoEst, null, nuevoOrden);
+      await enviarAccionServidor(doc, nuevoEst, null, nuevoOrden, nuevoAgenteProv);
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
@@ -1054,11 +1058,11 @@
       } catch(e) { showToast('Error al reasignar vendedor', 'error'); }
     }
 
-    async function enviarAccionServidor(doc, estado, obs, nroOrden) {
+    async function enviarAccionServidor(doc, estado, obs, nroOrden, agenteProveedor) {
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, admin: usuarioActual.email })
+          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, agenteProveedor: agenteProveedor, admin: usuarioActual.email })
         });
         const data = await res.json();
         if(data.success) { showToast("Actualizado correctamente"); cargarVentas(); }
