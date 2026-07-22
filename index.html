@@ -762,11 +762,18 @@
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-        return await res.json();
+        
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch (jsonErr) {
+          console.error("Respuesta del servidor no válida (HTML o Texto):", text);
+          throw new Error("El servidor devolvió una respuesta no válida. Verificá que el Web App esté configurado como 'Cualquier usuario'.");
+        }
       } catch (e) {
         clearTimeout(timeoutId);
         if (e.name === 'AbortError') {
-          throw new Error('La solicitud tardó demasiado y fue cancelada.');
+          throw new Error('La solicitud tardó demasiado y fue cancelada por tiempo de espera.');
         }
         throw e;
       }
@@ -1386,7 +1393,7 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN Y DRAG & DROP (Con manejo de errores seguro)
+    // GESTIÓN DE AGENDA, KANBAN Y DRAG & DROP
     async function cargarAgenda() {
       const tbody = document.getElementById('tablaAgenda');
       if (tbody && !agendaGlobal.length) {
