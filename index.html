@@ -68,7 +68,6 @@
     .kanban-card { background: #262626; border: 1px solid #444; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 11px; transition: transform 0.1s; }
     .kanban-card:hover { border-color: var(--primary); transform: translateY(-2px); }
 
-    /* NUEVOS ESTILOS PARA ESTILO CLÁSICO DE REPORTES */
     .rep-container { background: #0f766e; padding: 16px; border-radius: 6px; color: #fff; margin-bottom: 16px; }
     .rep-header-bar { background: #1e40af; color: #fff; padding: 8px 12px; font-weight: bold; font-size: 12px; text-transform: uppercase; border-top-left-radius: 4px; border-top-right-radius: 4px; }
     .rep-grid-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: #e0e0e0; gap: 2px; padding: 2px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
@@ -346,7 +345,7 @@
           </div>
         </div>
 
-        <!-- BLOQUE OPERATIVO 2: PRODUCTOS, PAGOS, CLUSTERS Y VELOCIDADES -->
+        <!-- BLOQUE OPERATIVO 2 -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;">
           
           <!-- Cumplidas por Producto -->
@@ -379,19 +378,17 @@
             </div>
           </div>
 
-          <!-- Velocidades - Fibra Cumplidas por Plan -->
+          <!-- Velocidades -->
           <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 6px; overflow: hidden;">
             <div style="background: #1e40af; color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">Velocidades — Fibra Cumplidas por Plan</div>
-            <div style="background: #f0f0f0; padding: 8px; color: #000; font-size: 11px;" id="contenedorVelocidades">
-              <!-- Renderizado dinámico -->
-            </div>
+            <div style="background: #f0f0f0; padding: 8px; color: #000; font-size: 11px;" id="contenedorVelocidades"></div>
           </div>
 
         </div>
 
         <!-- RANKING POR VENDEDOR -->
         <div class="nb-window">
-          <div class="nb-titlebar" style="background: #1e40af; color: white;">🏆 RANKING POR VENDEDOR — CUMPLIDAS · FIBRA · PORTA · MÓVIL · CANCELADAS · CASH · CLUSTER C · TV</div>
+          <div class="nb-titlebar" style="background: #1e40af; color: white;">🏆 RANKING POR VENDEDOR</div>
           <div style="overflow-x: auto;">
             <table class="nb-table">
               <thead>
@@ -430,7 +427,7 @@
     </div>
   </div>
 
-  <!-- MODAL NOTIFICACIÓN EN VIVO NUEVA VENTA (ADMIN / TL) -->
+  <!-- MODAL NOTIFICACIÓN EN VIVO NUEVA VENTA -->
   <div id="modalAlertaVenta" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center;">
     <div style="background: #1a1a1a; width: 100%; max-width: 450px; border: 2px solid var(--primary); padding: 20px; text-align: center; box-shadow: 0 0 30px rgba(59,130,246,0.5);">
       <div style="font-size: 28px; margin-bottom: 10px;">🎉</div>
@@ -605,7 +602,7 @@
     </div>
   </div>
 
-  <!-- MODAL IMPORTACIÓN MASIVA (TELÉFONOS O EXCEL) -->
+  <!-- MODAL IMPORTACIÓN MASIVA -->
   <div id="modalImportarLote" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div style="background: #000; width: 100%; max-width: 550px; border: 2px solid #333;">
       <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 3px 5px; display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 11px;">
@@ -629,7 +626,7 @@
           <select id="loteDestinoVendedor" style="width:100%; padding:4px; background:#222; color:#fff; border:1px solid #555;"></select>
         </div>
         <div style="margin-bottom:6px;">
-          <label>💡 <b>Aviso:</b> Puedes pegar una lista de <u>solo números de teléfono</u> (un número por línea). Los campos restantes (Nombre, DNI, Dirección) se completarán automáticamente con <b>XXXX</b> por defecto.</label>
+          <label>💡 <b>Aviso:</b> Puedes pegar una lista de <u>solo números de teléfono</u> (un número por línea).</label>
           <textarea id="loteTextoRaw" placeholder="1122334455&#10;1199887766&#10;1144556677" style="width:100%; padding:6px; background:#222; color:#fff; border:1px solid #555; height: 130px; font-family: monospace; font-size: 11px;"></textarea>
         </div>
       </div>
@@ -640,7 +637,7 @@
     </div>
   </div>
 
-  <!-- MODAL DETALLE DE AGENDA / SEGUIMIENTO -->
+  <!-- MODAL DETALLE DE AGENDA -->
   <div id="modalDetalleAgenda" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999; justify-content: center; align-items: center;">
     <div id="contenidoDetalleAgenda" style="width: 100%; max-width: 600px; margin: 20px;"></div>
   </div>
@@ -691,27 +688,50 @@
       if (el) el.textContent = val;
     }
 
+    // FUNCIÓN DE LOGIN OPTIMIZADA PARA MÓVILES (Con lower, trim y timeout)
     async function hacerLogin() {
-      const email = document.getElementById('loginEmail').value.trim();
+      const email = document.getElementById('loginEmail').value.toLowerCase().trim();
       const pass = document.getElementById('loginPass').value.trim();
       const btn = document.getElementById('btnLogin');
 
       if(!email || !pass) { setText('loginError', 'Completá email y contraseña'); return; }
       btn.textContent = 'Ingresando...'; btn.disabled = true; setText('loginError', '');
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'loginUsuario', email: email, pass: pass })
+          body: JSON.stringify({ action: 'loginUsuario', email: email, pass: pass }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const data = await res.json();
         if(data.success) {
           usuarioActual = data.user;
-          localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+          try {
+            localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
+          } catch(storageErr) {
+            setText('loginError', 'Error: Tu navegador bloquea el almacenamiento.');
+            btn.textContent = 'INGRESAR'; btn.disabled = false;
+            return;
+          }
           mostrarApp();
-        } else { setText('loginError', data.error); }
-      } catch(e) { setText('loginError', 'Error de conexión: ' + e.message); }
-      btn.textContent = 'INGRESAR'; btn.disabled = false;
+        } else { 
+          setText('loginError', data.error || 'Credenciales incorrectas'); 
+          btn.textContent = 'INGRESAR'; btn.disabled = false;
+        }
+      } catch(e) {
+        clearTimeout(timeoutId);
+        if(e.name === 'AbortError') {
+          setText('loginError', 'La red móvil tardó demasiado. Probá de nuevo.');
+        } else {
+          setText('loginError', 'Error de conexión: ' + e.message);
+        }
+        btn.textContent = 'INGRESAR'; btn.disabled = false;
+      }
     }
 
     function cerrarSesion() { localStorage.removeItem('paces_user'); location.reload(); }
@@ -731,7 +751,6 @@
         cargarListaUsuariosGlobales();
       }
       
-      // Inicializar por defecto el mes actual en el input de mes
       const hoy = new Date();
       const anio = hoy.getFullYear();
       const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -1277,7 +1296,6 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN Y DESCARTE CON COORDENADAS OBLIGATORIAS
     async function cargarAgenda() {
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
@@ -1579,7 +1597,7 @@
             </select>
 
             <div id="containerCoordsObligatorias" style="display: ${ (motivoActual==='SIN COBERTURA' || motivoActual==='SATURADO') ? 'block' : 'none' };">
-              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS (Requerido por Sin Cobertura / Saturado) *</label>
+              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS *</label>
               <input type="text" id="agDescarteCoordsInput" value="${r[6] || ''}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
             </div>
           </div>
@@ -1717,45 +1735,36 @@
           setText('repUltimaAct', data.fechaActualizacion);
           setText('repInstaladas', data.instaladas);
 
-          // Cluster C
           let pctClusterC = data.instaladas > 0 ? ((data.clusterCCount / data.instaladas) * 100).toFixed(1) : '0';
           setText('repClusterCVal', data.clusterCCount);
           setText('repClusterCPct', `de ${data.instaladas} fibra cumplidas · obj ≤10%`);
 
-          // Cash
           let pctCash = data.instaladas > 0 ? ((data.cashCount / data.instaladas) * 100).toFixed(1) : '0';
           setText('repCashVal', data.cashCount);
           setText('repCashPct', `de ${data.instaladas} fibra cumplidas · obj ≤10%`);
 
-          // Cancelado
           let pctCancelado = data.totalIngresadas > 0 ? ((data.cancelado / data.totalIngresadas) * 100).toFixed(1) : '0';
           setText('repCanceladoVal', data.cancelado);
-          setText('repCanceladoPct`, `de ${data.totalIngresadas} ingresadas · PACES`);
+          setText('repCanceladoPct', `de ${data.totalIngresadas} ingresadas · PACES`);
 
-          // Pendientes
           setText('repPendientes', data.pendientes);
 
-          // TV Cumplidas
           let pctTv = data.instaladas > 0 ? ((data.tvCumplidas / data.instaladas) * 100).toFixed(1) : '0';
           setText('repTvVal', data.tvCumplidas);
           setText('repTvPct', `de ${data.instaladas} fibra · obj ≥35%`);
 
-          // Productos
           setText('repFibra', data.fibraCount);
           setText('repPorta', data.portaCount);
           setText('repMovil', data.movilCount);
 
-          // Métodos de Pago
           setText('repPagoCash', data.cashCount);
           setText('repPagoTarjeta', data.tarjetaCount);
 
-          // Clusters
           setText('repClusterA', data.clusters.A);
           setText('repClusterB', data.clusters.B);
           setText('repClusterCBox', data.clusterCCount);
           setText('repClusterD', data.clusters.D);
 
-          // Velocidades por Plan
           const contVel = document.getElementById('contenedorVelocidades');
           if(contVel) {
             let totalFibra = data.fibraCount > 0 ? data.fibraCount : 1;
@@ -1778,7 +1787,6 @@
             contVel.innerHTML = htmlVel;
           }
 
-          // Tabla Ranking
           const tbody = document.getElementById('tablaRanking');
           if(!tbody) return;
           if(data.ranking.length === 0) {
