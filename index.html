@@ -1386,16 +1386,27 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN Y DRAG & DROP
+    // GESTIÓN DE AGENDA, KANBAN Y DRAG & DROP (Con manejo de errores seguro)
     async function cargarAgenda() {
+      const tbody = document.getElementById('tablaAgenda');
+      if (tbody && !agendaGlobal.length) {
+        tbody.innerHTML = "<tr><td colspan='9'><div class='loader'></div></td></tr>";
+      }
+
       try {
         const data = await apiFetch({ action: 'getAgenda', userEmail: usuarioActual.email });
         if(data.success) {
-          agendaGlobal = data.rows;
+          agendaGlobal = data.rows || [];
           renderAgenda(agendaGlobal);
           renderKanban(agendaGlobal);
+        } else {
+          showError(data.error || 'Error al cargar la agenda');
+          if(tbody) tbody.innerHTML = `<tr><td colspan='9' style='text-align:center;padding:20px;color:var(--accent)'>Error: ${data.error || 'Desconocido'}</td></tr>`;
         }
-      } catch(e) {}
+      } catch(e) {
+        showError('Error de red al cargar agenda: ' + e.message);
+        if(tbody) tbody.innerHTML = `<tr><td colspan='9' style='text-align:center;padding:20px;color:var(--accent)'>Error de conexión con el servidor.</td></tr>`;
+      }
     }
 
     function cambiarVistaAgenda(vista) {
