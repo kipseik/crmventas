@@ -497,8 +497,8 @@
             <input type="text" id="vDoc" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;" oninput="verificarDuplicadoDNI()">
           </div>
           <div>
-            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">FECHA NACIMIENTO (DD/MM/AAAA)</label>
-            <input type="text" id="vNac" placeholder="01/01/1990" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">FECHA NACIMIENTO (DD/MM/AAAA) *</label>
+            <input type="text" id="vNac" placeholder="DD/MM/AAAA (Ej: 15/05/1990)" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">NOMBRE *</label>
@@ -509,8 +509,8 @@
             <input type="text" id="vApellido" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
           <div>
-            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO TITULAR *</label>
-            <input type="text" id="vTel1" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
+            <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO TITULAR * (Exactamente 10 dígitos)</label>
+            <input type="text" id="vTel1" placeholder="Ej: 1122334455" maxlength="10" style="width: 100%; padding: 3px 4px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 11px;">
           </div>
           <div>
             <label style="display: block; margin-bottom: 3px; color: #c0c0c0;">TELEFONO ALTERNATIVO</label>
@@ -702,7 +702,7 @@
     let todosLosVendedoresGlobal = [];
     let configuracionCampanasGlobal = {};
     let vistaActualAgenda = 'tabla';
-    let leadConvertiendoDoc = null; // Variable para rastrear el lead que pasa a venta
+    let leadConvertiendoDoc = null; // Variable para almacenar el DNI del lead que se está convirtiendo
 
     let toastQueue = [];
     let isProcessingToast = false;
@@ -1286,12 +1286,28 @@
       const nombre = document.getElementById('vNombre').value.trim();
       const apellido = document.getElementById('vApellido').value.trim();
       const mail = document.getElementById('vMail').value.trim();
+      const fechaNac = document.getElementById('vNac').value.trim();
+      const tel1 = document.getElementById('vTel1').value.trim();
       const campanaVal = document.getElementById('vCampaña').value;
       const segmentoVal = document.getElementById('vSegmento').value;
       const productoVal = document.getElementById('vProducto').value;
 
       if(!doc || !nombre || !apellido) { showToast('Completá Documento, Nombre y Apellido', 'error'); return; }
       
+      // VALIDACIÓN ESTRICTA DE FECHA DE NACIMIENTO: XX/XX/XXXX
+      const fechaRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+      if (!fechaRegex.test(fechaNac)) {
+        showToast('⚠️ La fecha de nacimiento debe tener el formato estricto DD/MM/AAAA (Ej: 15/05/1990)', 'error');
+        return;
+      }
+
+      // VALIDACIÓN ESTRICTA DE TELÉFONO: Exactamente 10 dígitos
+      const telRegex = /^\d{10}$/;
+      if (!telRegex.test(tel1)) {
+        showToast('⚠️ El teléfono titular debe contener exactamente 10 dígitos (ni más ni menos).', 'error');
+        return;
+      }
+
       if(mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
         showToast('Formato de correo electrónico inválido', 'error');
         return;
@@ -1305,9 +1321,11 @@
         campana: campanaVal,
         segmento: segmentoVal,
         producto: productoVal,
-        documento: doc, nacimiento: document.getElementById('vNac').value,
-        nombre: nombre, apellido: apellido,
-        telTitular: document.getElementById('vTel1').value,
+        documento: doc, 
+        nacimiento: fechaNac,
+        nombre: nombre, 
+        apellido: apellido,
+        telTitular: tel1,
         telAlt: document.getElementById('vTel2').value,
         telTot: document.getElementById('vTelTot').value,
         mail: mail,
@@ -1318,8 +1336,9 @@
         cluster: document.getElementById('vCluster').value,
         cash: document.getElementById('vCash').value,
         tv: document.getElementById('vTV').value,
-        metodoPago: metodo, datosTarjeta: datosTarjetaVal,
-        origenAgendaDoc: leadConvertiendoDoc // Enviamos referencia para marcar el lead como VENDIDO en la agenda
+        metodoPago: metodo, 
+        datosTarjeta: datosTarjetaVal,
+        origenAgendaDoc: leadConvertiendoDoc // Envía la referencia para marcar el lead como VENDIDO en la agenda del backend
       };
 
       const rawFiles = [
@@ -1829,17 +1848,18 @@
         return;
       }
 
-      leadConvertiendoDoc = doc; // Guardamos la referencia para marcarlo como VENDIDO al guardar
+      leadConvertiendoDoc = doc; // Almacenamos el DNI del lead para marcarlo como VENDIDO al guardar
       cerrarModales();
       abrirModalVenta();
 
-      // Autocompletar datos del contacto en el formulario de venta
+      // Autocompletar datos principales en el formulario de venta
       document.getElementById('vBuscarDNI').value = contacto[2] || '';
       document.getElementById('vDoc').value = contacto[2] || '';
       document.getElementById('vNombre').value = contacto[3] || '';
       document.getElementById('vApellido').value = contacto[4] || '';
       document.getElementById('vTel1').value = contacto[8] || '';
-      document.getElementById('vLead').value = contacto[7] || ''; // Vendedor asignado como lead/responsable
+      document.getElementById('vLoc').value = contacto[5] || '';
+      document.getElementById('vLead').value = contacto[7] || '';
 
       // Seleccionar campaña si coincide
       const campSelect = document.getElementById('vCampaña');
@@ -1853,7 +1873,7 @@
         }
       }
 
-      showToast('Lead convertido. Completá los datos faltantes y hacé clic en Guardar.', 'info');
+      showToast('Lead convertido. Completá los datos restantes y hacé clic en Guardar.', 'info');
     }
 
     function toggleTipoFiltroReporte() {
