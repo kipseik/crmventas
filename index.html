@@ -61,15 +61,16 @@
     .nb-badge-green { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
     .nb-badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
 
-    /* ESTILOS KANBAN */
+    /* KANBAN & RESPONSIVE TABLES */
     .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px; overflow-x: auto; min-height: 500px; }
     .kanban-column { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 250px; }
     .kanban-col-header { font-size: 11px; font-weight: bold; text-transform: uppercase; padding: 6px; background: #2a2a2a; border-radius: 4px; text-align: center; color: var(--primary); }
-    .kanban-card { background: #262626; border: 1px solid #444; border-radius: 4px; padding: 10px; cursor: pointer; font-size: 11px; transition: transform 0.1s; }
+    .kanban-card { background: #262626; border: 1px solid #444; border-radius: 4px; padding: 10px; cursor: grab; font-size: 11px; transition: transform 0.1s; }
+    .kanban-card:active { cursor: grabbing; }
     .kanban-card:hover { border-color: var(--primary); transform: translateY(-2px); }
 
     .rep-container { background: #0f766e; padding: 16px; border-radius: 6px; color: #fff; margin-bottom: 16px; }
-    .rep-header-bar { background: #1e40af; color: #fff; padding: 8px 12px; font-weight: bold; font-size: 12px; text-transform: uppercase; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+    .rep-header-bar { background: #1e40af; color: #fff; padding: 8px 12px; font-weight: bold; font-size: 12px; text-transform: uppercase; border-top-left-radius: 4px; border-top-right-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
     .rep-grid-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); background: #e0e0e0; gap: 2px; padding: 2px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
     .rep-box { background: #f0f0f0; padding: 10px; text-align: center; color: #000; }
     .rep-box-title { font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 4px; }
@@ -78,9 +79,19 @@
 
     .loader { border: 3px solid var(--surface-2); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .toast { position: fixed; top: 70px; right: 20px; background: var(--surface-2); padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--primary); z-index: 9999; animation: slideIn 0.3s; max-width: 400px; }
+    
+    .toast { position: fixed; right: 20px; background: var(--surface-2); padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--primary); z-index: 9999; animation: slideIn 0.3s; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
     @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
     .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent); color: #fca5a5; padding: 20px; border-radius: 6px; margin: 20px; }
+
+    @media(max-width: 768px) {
+      .kanban-board { grid-template-columns: 1fr; }
+      .nb-table thead { display: none; }
+      .nb-table tr { display: block; margin-bottom: 12px; border: 1px solid #444; border-radius: 4px; background: var(--surface); }
+      .nb-table td { display: flex; justify-content: space-between; align-items: center; text-align: right; border-bottom: 1px solid #2d2d2d; padding: 8px 12px; }
+      .nb-table td::before { content: attr(data-label); font-weight: bold; color: var(--ink-soft); text-transform: uppercase; font-size: 10px; margin-right: 10px; text-align: left; }
+      .nb-table td:last-child { border-bottom: none; }
+    }
   </style>
 </head>
 <body>
@@ -138,7 +149,7 @@
           <div style="display: grid; grid-template-columns: 2fr 1fr 1.5fr 1fr 1fr; gap: 8px; align-items: end; font-size: 11px; margin-bottom: 10px;">
             <div>
               <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">BÚSQUEDA LIBRE</label>
-              <input type="text" id="filtroLibre" placeholder="Nombre, doc, NRO ORDEN..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onkeyup="aplicarFiltrosAvanzados()">
+              <input type="text" id="filtroLibre" placeholder="Nombre, doc, NRO ORDEN..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" oninput="debounceFiltros()">
             </div>
             <div>
               <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">CAMPAÑA</label>
@@ -148,7 +159,7 @@
             </div>
             <div>
               <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">VENDEDOR / EQUIPO</label>
-              <input type="text" id="filtroResp" placeholder="🔍 Buscar persona..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" onkeyup="aplicarFiltrosAvanzados()">
+              <input type="text" id="filtroResp" placeholder="🔍 Buscar persona..." style="padding: 4px; width:100%; border:1px solid #7f9db9; background:#fff; color:#000;" oninput="debounceFiltros()">
             </div>
             <div>
               <label style="display:block; font-weight:bold; margin-bottom:2px; color:#222;">ESTADO</label>
@@ -223,22 +234,22 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA KANBAN -->
+        <!-- CONTENEDOR VISTA KANBAN CON DRAG & DROP -->
         <div id="contenedorVistaKanban" class="nb-window" style="display: none; background: #121212;">
           <div class="kanban-board">
-            <div class="kanban-column">
+            <div class="kanban-column" ondragover="allowDrop(event)" ondrop="dropKanban(event, 'NUEVO')">
               <div class="kanban-col-header">Nuevos</div>
               <div id="kanbanNuevos" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
             </div>
-            <div class="kanban-column">
+            <div class="kanban-column" ondragover="allowDrop(event)" ondrop="dropKanban(event, 'CONTACTADO')">
               <div class="kanban-col-header" style="color: #60a5fa;">Contactados</div>
               <div id="kanbanContactados" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
             </div>
-            <div class="kanban-column">
+            <div class="kanban-column" ondragover="allowDrop(event)" ondrop="dropKanban(event, 'VENDIDO')">
               <div class="kanban-col-header" style="color: #10b981;">Vendidos</div>
               <div id="kanbanVendidos" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
             </div>
-            <div class="kanban-column">
+            <div class="kanban-column" ondragover="allowDrop(event)" ondrop="dropKanban(event, 'DESCARTADO')">
               <div class="kanban-col-header" style="color: #ef4444;">Descartados</div>
               <div id="kanbanDescartados" style="display:flex; flex-direction:column; gap:6px; min-height:400px;"></div>
             </div>
@@ -311,7 +322,10 @@
 
         <!-- BLOQUE OPERATIVO 1: PRINCIPALES -->
         <div class="rep-container">
-          <div class="rep-header-bar" id="repHeaderTitulo">OPERATIVO — CARGANDO...</div>
+          <div class="rep-header-bar" id="repHeaderTitulo">
+            <span>OPERATIVO — CARGANDO...</span>
+            <button onclick="descargarExcelRanking()" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; font-weight:bold;">↓ Excel Ranking</button>
+          </div>
           <div class="rep-grid-boxes">
             <div class="rep-box">
               <div class="rep-box-title">INSTALADAS</div>
@@ -674,6 +688,13 @@
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';
 
+    const ESTADOS_VENTA = {
+      PENDIENTE: 'PENDIENTE',
+      CUMPLIDA: 'CUMPLIDA',
+      CANCELADA: 'CANCELADA',
+      RECUPERAR: 'A RECUPERAR'
+    };
+
     let todasLasVentas = [];
     let agendaGlobal = [];
     let usuarioActual = null;
@@ -682,13 +703,75 @@
     let configuracionCampanasGlobal = {};
     let vistaActualAgenda = 'tabla';
 
+    let toastQueue = [];
+    let isProcessingToast = false;
+    let searchDebounceTimer = null;
+
+    const Storage = {
+      get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+      set(key, val) { try { localStorage.setItem(key, val); } catch(e) {} },
+      remove(key) { try { localStorage.removeItem(key); } catch(e) {} }
+    };
+
     function safeLower(v) { return (v || '').toString().toLowerCase(); }
     function setText(id, val) {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     }
 
-    // FUNCIÓN DE LOGIN OPTIMIZADA PARA MÓVILES (Con lower, trim y timeout)
+    function showToast(msg, type = 'info') {
+      toastQueue.push({ msg, type });
+      if (!isProcessingToast) processToastQueue();
+    }
+
+    function processToastQueue() {
+      if (toastQueue.length === 0) {
+        isProcessingToast = false;
+        return;
+      }
+      isProcessingToast = true;
+      const { msg, type } = toastQueue.shift();
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.bottom = `${20 + (toastQueue.length * 55)}px`;
+      toast.style.borderLeftColor = type === 'error' ? 'var(--accent)' : 'var(--primary)';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+        processToastQueue();
+      }, 3500);
+    }
+
+    function debounceFiltros() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        aplicarFiltrosAvanzados();
+      }, 300);
+    }
+
+    async function apiFetch(payload, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return await res.json();
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') {
+          throw new Error('La solicitud tardó demasiado y fue cancelada.');
+        }
+        throw e;
+      }
+    }
+
     async function hacerLogin() {
       const email = document.getElementById('loginEmail').value.toLowerCase().trim();
       const pass = document.getElementById('loginPass').value.trim();
@@ -697,60 +780,49 @@
       if(!email || !pass) { setText('loginError', 'Completá email y contraseña'); return; }
       btn.textContent = 'Ingresando...'; btn.disabled = true; setText('loginError', '');
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'loginUsuario', email: email, pass: pass }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        const data = await res.json();
+        const data = await apiFetch({ action: 'loginUsuario', email: email, pass: pass });
         if(data.success) {
           usuarioActual = data.user;
-          try {
-            localStorage.setItem('paces_user', JSON.stringify(usuarioActual));
-          } catch(storageErr) {
-            setText('loginError', 'Error: Tu navegador bloquea el almacenamiento.');
-            btn.textContent = 'INGRESAR'; btn.disabled = false;
-            return;
-          }
+          Storage.set('paces_user', JSON.stringify(usuarioActual));
           mostrarApp();
         } else { 
           setText('loginError', data.error || 'Credenciales incorrectas'); 
           btn.textContent = 'INGRESAR'; btn.disabled = false;
         }
       } catch(e) {
-        clearTimeout(timeoutId);
-        if(e.name === 'AbortError') {
-          setText('loginError', 'La red móvil tardó demasiado. Probá de nuevo.');
-        } else {
-          setText('loginError', 'Error de conexión: ' + e.message);
-        }
+        setText('loginError', 'Error de conexión: ' + e.message);
         btn.textContent = 'INGRESAR'; btn.disabled = false;
       }
     }
 
-    function cerrarSesion() { localStorage.removeItem('paces_user'); location.reload(); }
+    function cerrarSesion() { 
+      Storage.remove('paces_user');
+      location.reload(); 
+    }
 
     function mostrarApp() {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
-      usuarioActual = JSON.parse(localStorage.getItem('paces_user'));
-      setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
       
+      const userStr = Storage.get('paces_user');
+      try {
+        usuarioActual = userStr ? JSON.parse(userStr) : null;
+      } catch(e) { usuarioActual = null; }
+
+      if (!usuarioActual) { cerrarSesion(); return; }
+
+      setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
+
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         document.getElementById('linkUsuarios').style.display = 'flex';
         document.getElementById('linkConfig').style.display = 'flex';
         const btnImp = document.getElementById('btnImportarLote');
         if(btnImp) btnImp.style.display = 'inline-block';
-        
+
         cargarListaUsuariosGlobales();
       }
-      
+
       const hoy = new Date();
       const anio = hoy.getFullYear();
       const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -762,15 +834,6 @@
       cargarConfigCampanas();
       cargarVentas();
       cargarAgenda();
-    }
-
-    function showToast(msg, type = 'info') {
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.style.borderLeftColor = type === 'error'? 'var(--accent)' : 'var(--primary)';
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
     }
 
     function showError(msg) {
@@ -801,11 +864,7 @@
 
     async function cargarConfigCampanas() {
       try {
-        const res = await fetch(GAS_URL, { 
-          method: 'POST', 
-          body: JSON.stringify({ action: 'getConfigCampanas' }) 
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getConfigCampanas' });
         if(data.success) {
           configuracionCampanasGlobal = data.campanasMap || {};
           poblarSelectsCampanas();
@@ -815,7 +874,7 @@
 
     function poblarSelectsCampanas() {
       const campanas = Object.keys(configuracionCampanasGlobal);
-      
+
       const filtroCamp = document.getElementById('filtroCamp');
       if(filtroCamp) {
         filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => `<option>${c}</option>`).join('');
@@ -841,8 +900,8 @@
       const campaña = document.getElementById('vCampaña').value;
       const selectProd = document.getElementById('vProducto');
       selectProd.innerHTML = '<option>-- Seleccionar --</option>';
-      
-      if(configuracionCampanasGlobal[campaña]) {
+
+      if(configuracionCampanasGlobal[campaña]?.length) {
         configuracionCampanasGlobal[campaña].forEach(p => {
           selectProd.innerHTML += `<option>${p}</option>`;
         });
@@ -851,8 +910,7 @@
 
     async function cargarTablaConfigCampanas() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getConfigCampanas'}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getConfigCampanas' });
         const tbody = document.getElementById('tablaConfigCampanas');
         if(!tbody) return;
         if(data.success) {
@@ -878,11 +936,7 @@
       if(!camp || !prod) { showToast('Completá campaña y producto', 'error'); return; }
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod, compania: compania}, adminEmail: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'guardarConfigCampana', data: {campana: camp, producto: prod, compania: compania}, adminEmail: usuarioActual.email });
         if(data.success) {
           showToast(data.msg);
           document.getElementById('cfgCampana').value = '';
@@ -897,11 +951,7 @@
     async function eliminarCampanaProducto(camp, prod, compania) {
       if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}" (${compania})?`)) return;
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'eliminarConfigCampana', campana: camp, producto: prod, compania: compania, adminEmail: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'eliminarConfigCampana', campana: camp, producto: prod, compania: compania, adminEmail: usuarioActual.email });
         if(data.success) {
           showToast(data.msg);
           cargarConfigCampanas();
@@ -929,18 +979,13 @@
       document.getElementById('containerTarjeta').style.display = 'none';
     }
 
-    window.onload = function() {
-      if(localStorage.getItem('paces_user')) { mostrarApp(); }
-    };
-
     async function cargarListaUsuariosGlobales() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getUsuarios', userEmail: usuarioActual.email });
         if(data.success) {
           teamLeadersGlobal = data.teamLeaders || [];
           todosLosVendedoresGlobal = data.allUsers || [];
-          
+
           const loteSel = document.getElementById('loteNuevoVendedor');
           if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
             loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
@@ -955,8 +1000,7 @@
 
     async function cargarVentas() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getVentas', userEmail: usuarioActual.email}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getVentas', userEmail: usuarioActual.email });
         if(data.success) {
           todasLasVentas = data.rows;
           aplicarFiltrosAvanzados();
@@ -968,8 +1012,8 @@
     function actualizarKPIsPersonales() {
       const misVentas = todasLasVentas.filter(r => safeLower(r[6]) === safeLower(usuarioActual.nombre) || safeLower(r[6]) === safeLower(usuarioActual.email));
       const total = misVentas.length;
-      const instaladas = misVentas.filter(r => (r[8] || '').toUpperCase() === 'CUMPLIDA').length;
-      const pendientes = misVentas.filter(r => (r[8] || '').toUpperCase() === 'PENDIENTE').length;
+      const instaladas = misVentas.filter(r => (r[8] || '').toUpperCase() === ESTADOS_VENTA.CUMPLIDA).length;
+      const pendientes = misVentas.filter(r => (r[8] || '').toUpperCase() === ESTADOS_VENTA.PENDIENTE).length;
       const efectividad = total > 0 ? ((instaladas / total) * 100).toFixed(1) + '%' : '0%';
 
       setText('kpiTotal', total);
@@ -991,7 +1035,7 @@
       const duplicado = todasLasVentas.find(r => r[3].toString().trim() === dni);
       if(duplicado && alerta) {
         alerta.style.display = 'block';
-        alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[6]} (${duplicado[8] || 'PENDIENTE'}).`;
+        alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[6]} (${duplicado[8] || ESTADOS_VENTA.PENDIENTE}).`;
       } else if(alerta) { alerta.style.display = 'none'; }
     }
 
@@ -1006,7 +1050,7 @@
         if(libre && !textoFila.includes(libre)) return false;
         if(camp && r[1] !== camp) return false;
         if(resp && !safeLower(r[6]).includes(resp)) return false;
-        if(estado && (r[8] || 'PENDIENTE') !== estado) return false;
+        if(estado && (r[8] || ESTADOS_VENTA.PENDIENTE) !== estado) return false;
         return true;
       });
 
@@ -1021,20 +1065,27 @@
         tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin ventas registradas</td></tr>";
         return;
       }
-      tbody.innerHTML = data.map((r, idx) => {
-        let est = r[8] || "PENDIENTE";
+      tbody.innerHTML = data.map((r) => {
+        let globalIdx = todasLasVentas.indexOf(r);
+        let est = r[8] || ESTADOS_VENTA.PENDIENTE;
         let bClass = "nb-badge-blue";
-        if(est === 'CUMPLIDA') bClass = "nb-badge-green";
-        else if(est.includes('CANCELADA') || est.includes('RECUPERAR')) bClass = "nb-badge-red";
-        else if(est === 'PENDIENTE') bClass = "nb-badge-yellow";
-        
+        if(est === ESTADOS_VENTA.CUMPLIDA) bClass = "nb-badge-green";
+        else if(est.includes(ESTADOS_VENTA.CANCELADA) || est.includes(ESTADOS_VENTA.RECUPERAR)) bClass = "nb-badge-red";
+        else if(est === ESTADOS_VENTA.PENDIENTE) bClass = "nb-badge-yellow";
+
         let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${r[11]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
         let nroOrdenVal = r[22] || '-';
 
-        return `<tr onclick="verDetalleVenta(${idx})">
-          <td>${r[0] || ''}</td><td>${r[1] || ''} (${r[2] || 'Individuos'})</td><td><strong>${nroOrdenVal}</strong></td>
-          <td>${r[3] || ''}</td><td>${r[4] || ''} ${r[5] || ''}</td><td>${r[6] || ''}</td>
-          <td>${r[7] || ''}</td><td><span class="nb-badge ${bClass}">${est}</span></td><td>${adjHTML}</td>
+        return `<tr onclick="verDetalleVenta(${globalIdx})">
+          <td data-label="Fecha">${r[0] || ''}</td>
+          <td data-label="Campaña">${r[1] || ''} (${r[2] || 'Individuos'})</td>
+          <td data-label="Nro Orden"><strong>${nroOrdenVal}</strong></td>
+          <td data-label="Documento">${r[3] || ''}</td>
+          <td data-label="Nombre">${r[4] || ''} ${r[5] || ''}</td>
+          <td data-label="Vendedor">${r[6] || ''}</td>
+          <td data-label="Producto">${r[7] || ''}</td>
+          <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
+          <td data-label="Adjuntos">${adjHTML}</td>
         </tr>`;
       }).join('');
     }
@@ -1080,9 +1131,34 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    function descargarExcelRanking() {
+      const tbody = document.getElementById('tablaRanking');
+      if(!tbody || tbody.innerText.includes("Sin datos")) {
+        showToast('No hay datos en el ranking para exportar', 'error');
+        return;
+      }
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Vendedor,Cumplidas,Fibra,Porta,Movil,Canceladas,Cash,ClusterC,TV\r\n";
+      
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(tr => {
+        const cols = tr.querySelectorAll('td');
+        if(cols.length >= 9) {
+          let dataRow = Array.from(cols).map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(",");
+          csvContent += dataRow + "\r\n";
+        }
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `ranking_vendedores_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
-      let est = r[8] || "PENDIENTE";
+      let est = r[8] || ESTADOS_VENTA.PENDIENTE;
       let nroOrdenActual = r[22] || '';
       let agenteProvActual = r[23] || '';
       let vendedorActual = r[6] || '';
@@ -1116,12 +1192,12 @@
           <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-weight: bold;">ESTADO:</span>
             <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
-              <option value="PENDIENTE" ${est==='PENDIENTE'?'selected':''}>PENDIENTE</option>
-              <option value="CUMPLIDA" ${est==='CUMPLIDA'?'selected':''}>CUMPLIDA (INSTALADA)</option>
-              <option value="CANCELADA" ${est==='CANCELADA'?'selected':''}>CANCELADA</option>
-              <option value="A RECUPERAR" ${est==='A RECUPERAR'?'selected':''}>A RECUPERAR</option>
+              <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
+              <option value="${ESTADOS_VENTA.CUMPLIDA}" ${est===ESTADOS_VENTA.CUMPLIDA?'selected':''}>CUMPLIDA (INSTALADA)</option>
+              <option value="${ESTADOS_VENTA.CANCELADA}" ${est===ESTADOS_VENTA.CANCELADA?'selected':''}>CANCELADA</option>
+              <option value="${ESTADOS_VENTA.RECUPERAR}" ${est===ESTADOS_VENTA.RECUPERAR?'selected':''}>A RECUPERAR</option>
             </select>
-            
+
             ${esAdminTL ? `
               <span style="font-size: 11px; font-weight: bold;">NRO ORDEN:</span>
               <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 80px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
@@ -1181,11 +1257,7 @@
 
       await enviarAccionServidor(doc, nuevoEst, null, nuevoOrden, nuevoAgenteProv);
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'cambiarVendedorVenta', doc: doc, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'cambiarVendedorVenta', doc: doc, nuevoVendedor: nuevoVend, admin: usuarioActual.email });
         if(data.success) { showToast("Venta y vendedor actualizados"); cargarVentas(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al reasignar vendedor', 'error'); }
@@ -1193,11 +1265,7 @@
 
     async function enviarAccionServidor(doc, estado, obs, nroOrden, agenteProveedor) {
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, agenteProveedor: agenteProveedor, admin: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, agenteProveedor: agenteProveedor, admin: usuarioActual.email });
         if(data.success) { showToast("Actualizado correctamente"); cargarVentas(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error: ' + e.message, 'error'); }
@@ -1208,11 +1276,17 @@
       const doc = document.getElementById('vBuscarDNI').value.trim() || document.getElementById('vDoc')?.value.trim() || '';
       const nombre = document.getElementById('vNombre').value.trim();
       const apellido = document.getElementById('vApellido').value.trim();
+      const mail = document.getElementById('vMail').value.trim();
       const campanaVal = document.getElementById('vCampaña').value;
       const segmentoVal = document.getElementById('vSegmento').value;
       const productoVal = document.getElementById('vProducto').value;
 
       if(!doc || !nombre || !apellido) { showToast('Completá Documento, Nombre y Apellido', 'error'); return; }
+      
+      if(mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+        showToast('Formato de correo electrónico inválido', 'error');
+        return;
+      }
 
       if(btn) { btn.innerText = "Guardando..."; btn.disabled = true; }
       const metodo = document.getElementById('vMetodoPago').value;
@@ -1227,7 +1301,7 @@
         telTitular: document.getElementById('vTel1').value,
         telAlt: document.getElementById('vTel2').value,
         telTot: document.getElementById('vTelTot').value,
-        mail: document.getElementById('vMail').value,
+        mail: mail,
         provincia: document.getElementById('vProv').value,
         localidad: document.getElementById('vLoc').value,
         lead: document.getElementById('vLead').value,
@@ -1238,20 +1312,21 @@
         metodoPago: metodo, datosTarjeta: datosTarjetaVal
       };
 
-      const files = [document.getElementById('vArchivo1').files[0], document.getElementById('vArchivo2').files[0], document.getElementById('vArchivo3').files[0]].filter(Boolean);
+      const rawFiles = [
+        document.getElementById('vArchivo1').files[0],
+        document.getElementById('vArchivo2').files[0],
+        document.getElementById('vArchivo3').files[0]
+      ].filter(Boolean);
+
       const enviar = async (datos) => {
         try {
-          const res = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({action: 'guardarVenta', userEmail: usuarioActual.email, data: datos})
-          });
-          const result = await res.json();
+          const result = await apiFetch({ action: 'guardarVenta', userEmail: usuarioActual.email, data: datos });
           if(btn) { btn.innerText = "Guardar"; btn.disabled = false; }
           if(result.success) {
             showToast(result.msg);
             cerrarModales();
             cargarVentas();
-            
+
             if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
               mostrarAlertaNuevaVenta(datos, usuarioActual.nombre);
             }
@@ -1259,11 +1334,26 @@
         } catch(err) { if(btn) { btn.innerText = "Guardar"; btn.disabled = false; } showToast('Error: ' + err.message, 'error'); }
       };
 
-      if(files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = function(e) { d.archivoData = e.target.result; d.archivoNombre = files[0].name; enviar(d); };
-        reader.readAsDataURL(files[0]);
-      } else { enviar(d); }
+      if(rawFiles.length > 0) {
+        try {
+          const filePromises = rawFiles.map(file => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = e => resolve({ name: file.name, data: e.target.result });
+              reader.onerror = err => reject(err);
+              reader.readAsDataURL(file);
+            });
+          });
+          const convertedFiles = await Promise.all(filePromises);
+          d.archivos = convertedFiles;
+          enviar(d);
+        } catch(e) {
+          if(btn) { btn.innerText = "Guardar"; btn.disabled = false; }
+          showToast('Error al procesar archivos adjuntos', 'error');
+        }
+      } else { 
+        enviar(d); 
+      }
     }
 
     function mostrarAlertaNuevaVenta(ventaData, vendedor) {
@@ -1296,10 +1386,10 @@
       cambiarCampañaDinamica();
     }
 
+    // GESTIÓN DE AGENDA, KANBAN Y DRAG & DROP
     async function cargarAgenda() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getAgenda', userEmail: usuarioActual.email}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getAgenda', userEmail: usuarioActual.email });
         if(data.success) {
           agendaGlobal = data.rows;
           renderAgenda(agendaGlobal);
@@ -1351,13 +1441,13 @@
         return;
       }
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
-      
-      tbody.innerHTML = data.map((r, idx) => {
+
+      tbody.innerHTML = data.map((r) => {
         let est = r[10] || 'NUEVO';
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : (est === 'DESCARTADO' ? 'nb-badge-red' : 'nb-badge-yellow'));
         let fechaRec = r[11] ? r[11].replace('T', ' ') : '-';
         let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
-        
+
         let fechaSlaRef = r[13] || r[0];
         let enFrio = esLeadEnFrio(fechaSlaRef, est);
         let rowStyle = enFrio ? 'background: rgba(239, 68, 68, 0.12); border-left: 3px solid var(--accent);' : '';
@@ -1365,22 +1455,25 @@
         let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Descarte: ${r[12]}</span>` : '';
 
         let telVal = r[8] || '';
-        let whatsappBtn = telVal ? `<a href="https://wa.me/549${telVal.replace(/\D/g,'')}" target="_blank" style="margin-left:5px; text-decoration:none;" title="Abrir WhatsApp">💬</a>` : '';
+        let cleanTel = telVal.replace(/\D/g,'');
+        if(cleanTel.startsWith('549')) cleanTel = cleanTel.slice(3);
+        else if(cleanTel.startsWith('54')) cleanTel = cleanTel.slice(2);
+        let whatsappBtn = telVal ? `<a href="https://wa.me/549${cleanTel}" target="_blank" style="margin-left:5px; text-decoration:none;" title="Abrir WhatsApp">💬</a>` : '';
         let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">🗺️ ${r[6]}</a>` : 'N/A';
 
         return `<tr style="${rowStyle}">
-          <td>${checkHTML}</td>
-          <td>${r[0] || ''}</td>
-          <td style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
-          <td>${r[2] || ''}</td>
-          <td><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
-          <td>${telVal} ${whatsappBtn}</td>
-          <td><strong>${r[7] || ''}</strong></td>
-          <td><span class="nb-badge ${bClass}">${est}</span></td>
-          <td><button onclick="verDetalleAgenda(${agendaGlobal.indexOf(r)})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+          <td data-label="Seleccionar">${checkHTML}</td>
+          <td data-label="Fecha">${r[0] || ''}</td>
+          <td data-label="Recordatorio" style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
+          <td data-label="Documento">${r[2] || ''}</td>
+          <td data-label="Nombre / Dir"><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
+          <td data-label="Teléfono">${telVal} ${whatsappBtn}</td>
+          <td data-label="Vendedor"><strong>${r[7] || ''}</strong></td>
+          <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
+          <td data-label="Acciones"><button onclick="verDetalleAgenda(${agendaGlobal.indexOf(r)})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
       }).join('');
-      
+
       actualizarBarraMasiva();
     }
 
@@ -1396,10 +1489,11 @@
       colVendidos.innerHTML = '';
       colDescartados.innerHTML = '';
 
-      data.forEach((r, idx) => {
+      data.forEach((r) => {
+        let globalIdx = agendaGlobal.indexOf(r);
         let est = (r[10] || 'NUEVO').toUpperCase();
         let cardHTML = `
-          <div class="kanban-card" onclick="verDetalleAgenda(${idx})">
+          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${r[2]}')" onclick="verDetalleAgenda(${globalIdx})">
             <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${r[3]} ${r[4]}</div>
             <div style="font-size:10px; color:var(--ink-soft);">DNI: ${r[2]} | Tel: ${r[8]}</div>
             <div style="font-size:10px; margin-top:4px;">📍 ${r[5] || 'Sin dir'}</div>
@@ -1413,6 +1507,50 @@
         else if(est === 'DESCARTADO') colDescartados.innerHTML += cardHTML;
         else colNuevos.innerHTML += cardHTML;
       });
+    }
+
+    function dragKanban(event, dni) {
+      event.dataTransfer.setData('text/plain', dni);
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    async function dropKanban(event, nuevoEstado) {
+      event.preventDefault();
+      const dni = event.dataTransfer.getData('text/plain');
+      if (!dni) return;
+
+      const contacto = agendaGlobal.find(r => r[2].toString() === dni.toString());
+      if (!contacto) return;
+
+      if (nuevoEstado === 'DESCARTADO') {
+        showToast('Para descartar un lead, abrilo y completá el motivo y coordenadas obligatorias.', 'error');
+        return;
+      }
+
+      try {
+        const data = await apiFetch({ 
+          action: 'actualizarAgenda', 
+          doc: dni, 
+          estado: nuevoEstado, 
+          motivoDescarte: '', 
+          coordsDescarte: contacto[6] || '', 
+          comentarios: `Movido a ${nuevoEstado} vía Kanban`, 
+          nuevoVendedor: null, 
+          fechaRec: contacto[11] || '', 
+          admin: usuarioActual.email 
+        });
+        if(data.success) {
+          showToast(`Estado actualizado a ${nuevoEstado}`);
+          cargarAgenda();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch(e) {
+        showToast('Error al actualizar estado por Kanban', 'error');
+      }
     }
 
     function filtrarLlamadosHoy() {
@@ -1443,7 +1581,7 @@
     function actualizarBarraMasiva() {
       const seleccionados = document.querySelectorAll('.checkAgenda:checked');
       const barra = document.getElementById('barraMasiva');
-      if(seleccionados.length > 0) {
+      if (['Subagente Admin', 'Team Leader'].includes(usuarioActual?.rol) && seleccionados.length > 0) {
         if(barra) barra.style.display = 'flex';
         setText('contadorSeleccionados', `${seleccionados.length} seleccionados`);
       } else {
@@ -1459,11 +1597,7 @@
       if(!confirm(`¿Reasignar ${seleccionados.length} contactos seleccionados a ${nuevoVend}?`)) return;
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'reasignarLoteAgenda', docs: seleccionados, nuevoVendedor: nuevoVend, admin: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'reasignarLoteAgenda', docs: seleccionados, nuevoVendedor: nuevoVend, admin: usuarioActual.email });
         if(data.success) {
           showToast(data.msg);
           document.getElementById('checkTodos').checked = false;
@@ -1494,11 +1628,7 @@
       }
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'importarLoteAgendaGS', userEmail: usuarioActual.email, campana: camp, vendedorDestino: vendedorDestino, rawText: rawText, modoDistribucion: modoDist })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'importarLoteAgendaGS', userEmail: usuarioActual.email, campana: camp, vendedorDestino: vendedorDestino, rawText: rawText, modoDistribucion: modoDist });
         if(data.success) {
           showToast(data.msg);
           cerrarModales();
@@ -1517,7 +1647,7 @@
       });
       const containerAsignar = document.getElementById('containerAsignarVendedor');
       const selectVend = document.getElementById('agVendedor');
-      
+
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         if(containerAsignar) containerAsignar.style.display = 'block';
         if(selectVend) selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
@@ -1544,8 +1674,7 @@
       };
 
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'guardarAgenda', userEmail: usuarioActual.email, data: d}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'guardarAgenda', userEmail: usuarioActual.email, data: d });
         if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al guardar contacto', 'error'); }
@@ -1564,7 +1693,7 @@
           <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'} | <b>GPS:</b> <a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">${r[6] || 'N/A'}</a></div>
           <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[8]}</div>
           <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${r[7]}</div>
-          
+
           ${esAdminTL ? `
             <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
               <label style="display:block; margin-bottom: 4px; color: var(--ink-soft);">REASIGNAR A OTRO VENDEDOR:</label>
@@ -1597,7 +1726,7 @@
             </select>
 
             <div id="containerCoordsObligatorias" style="display: ${ (motivoActual==='SIN COBERTURA' || motivoActual==='SATURADO') ? 'block' : 'none' };">
-              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS *</label>
+              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS (Ej: -34.6037, -58.3816) *</label>
               <input type="text" id="agDescarteCoordsInput" value="${r[6] || ''}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
             </div>
           </div>
@@ -1644,17 +1773,20 @@
       const comentario = document.getElementById('agNuevoComentario').value.trim();
       const nuevaRec = document.getElementById('agNuevoRecordatorio').value;
 
-      if (nuevoEst === 'DESCARTADO' && (motivoDesc === 'SIN COBERTURA' || motivoDesc === 'SATURADO') && !coordsInput) {
-        showToast('⚠️ Las coordenadas son obligatorias para descarte por Sin Cobertura o Saturado.', 'error');
-        return;
+      if (nuevoEst === 'DESCARTADO' && (motivoDesc === 'SIN COBERTURA' || motivoDesc === 'SATURADO')) {
+        if (!coordsInput) {
+          showToast('⚠️ Las coordenadas son obligatorias para descarte por Sin Cobertura o Saturado.', 'error');
+          return;
+        }
+        const coordsRegex = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+        if (!coordsRegex.test(coordsInput)) {
+          showToast('⚠️ Formato de coordenadas inválido. Usá: -34.6037, -58.3816', 'error');
+          return;
+        }
       }
 
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, coordsDescarte: coordsInput, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, coordsDescarte: coordsInput, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email });
         if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al actualizar', 'error'); }
@@ -1662,12 +1794,9 @@
 
     async function reasignarContactoLead(doc) {
       const nuevoVend = document.getElementById('agNuevoVendedor').value;
+      if (!confirm(`¿Confirmar reasignación a ${nuevoVend}?`)) return;
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, coordsDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, coordsDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email });
         if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al reasignar', 'error'); }
@@ -1676,11 +1805,7 @@
     async function convertirEnVenta(doc) {
       if(!confirm('¿Estás seguro de convertir este contacto en una venta activa?')) return;
       try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'convertirAgenda', doc: doc, userEmail: usuarioActual.email })
-        });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'convertirAgenda', doc: doc, userEmail: usuarioActual.email });
         if(data.success) {
           showToast(data.msg);
           cerrarModales();
@@ -1704,19 +1829,20 @@
       const desdeFiltro = document.getElementById('filtroDesde').value;
       const hastaFiltro = document.getElementById('filtroHasta').value;
 
+      if(tipoFiltro === 'rango' && desdeFiltro && hastaFiltro && desdeFiltro > hastaFiltro) {
+        showToast('La fecha "Desde" no puede ser mayor a "Hasta"', 'error');
+        return;
+      }
+
       try {
-        const res = await fetch(GAS_URL, { 
-          method: 'POST', 
-          body: JSON.stringify({ 
-            action: 'getReportesAvanzados', 
-            tipoFiltro: tipoFiltro,
-            mesFiltro: mesFiltro,
-            diaFiltro: diaFiltro,
-            desdeFiltro: desdeFiltro,
-            hastaFiltro: hastaFiltro
-          }) 
+        const data = await apiFetch({ 
+          action: 'getReportesAvanzados', 
+          tipoFiltro: tipoFiltro,
+          mesFiltro: mesFiltro,
+          diaFiltro: diaFiltro,
+          desdeFiltro: desdeFiltro,
+          hastaFiltro: hastaFiltro
         });
-        const data = await res.json();
         if(data.success) {
           let etiquetaPeriodo = 'OPERATIVO';
           if(tipoFiltro === 'mes' && mesFiltro) {
@@ -1732,7 +1858,6 @@
           }
 
           setText('repHeaderTitulo', `${etiquetaPeriodo} · ÚLTIMA ACTUALIZACIÓN ${data.fechaActualizacion}`);
-          setText('repUltimaAct', data.fechaActualizacion);
           setText('repInstaladas', data.instaladas);
 
           let pctClusterC = data.instaladas > 0 ? ((data.clusterCCount / data.instaladas) * 100).toFixed(1) : '0';
@@ -1812,8 +1937,7 @@
 
     async function cargarUsuarios() {
       try {
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getUsuarios', userEmail: usuarioActual.email}) });
-        const data = await res.json();
+        const data = await apiFetch({ action: 'getUsuarios', userEmail: usuarioActual.email });
         const tbody = document.getElementById('tablaUsuarios');
         if(!tbody) return;
         if(data.success) {
@@ -1877,8 +2001,7 @@
       try {
         const action = original ? 'editarUsuarioGS' : 'guardarUsuario';
         const body = original ? {action, userEmail: usuarioActual.email, originalEmail: original, data} : {action, userEmail: usuarioActual.email, data};
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(body) });
-        const result = await res.json();
+        const result = await apiFetch(body);
         if(result.success) { showToast(result.msg); cerrarModales(); cargarUsuarios(); }
         else { showToast(result.error, 'error'); }
       } catch(e) { showToast('Error: ' + e.message, 'error'); }
