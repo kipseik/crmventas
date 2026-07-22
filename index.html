@@ -975,7 +975,8 @@
     function abrirModalVenta() {
       document.getElementById('modalVenta').style.display = 'flex';
       ['vDoc','vNombre','vApellido','vTel1','vTel2','vTelTot','vMail','vLoc','vLead','vObs','vNac','vDatosTarjeta','vArchivo1','vArchivo2','vArchivo3'].forEach(id => {
-        const el = document.getElementById(id); if(el) el.value = '';
+        const el = document.getElementById(id);
+        if(el) el.value = '';
       });
       document.getElementById('alertaDuplicado').style.display = 'none';
       document.getElementById('vCampaña').selectedIndex = 0;
