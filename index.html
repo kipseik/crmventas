@@ -1463,7 +1463,7 @@
       tbody.innerHTML = data.map((r) => {
         let est = r[10] || 'NUEVO';
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : (est === 'DESCARTADO' ? 'nb-badge-red' : 'nb-badge-yellow'));
-        let fechaRec = r[11] ? r[11].replace('T', ' ') : '-';
+        let fechaRec = r[11] ? String(r[11]).replace('T', ' ') : '-';
         let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
 
         let fechaSlaRef = r[13] || r[0];
