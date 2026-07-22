@@ -773,7 +773,7 @@
       } catch (e) {
         clearTimeout(timeoutId);
         if (e.name === 'AbortError') {
-          throw new Error('La solicitud tardó demasiado y fue cancelada por tiempo de espera.');
+          throw new Error('La solicitud tardó demasiado y fue cancelada.');
         }
         throw e;
       }
@@ -1472,11 +1472,7 @@
         let frioBadge = enFrio ? `<br><span style="font-size:9px; color:#ef4444; font-weight:bold;">⚠️ EN FRÍO (>48h sin gestión)</span>` : '';
         let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Descarte: ${r[12]}</span>` : '';
 
-        let telVal = r[8] || '';
-        let cleanTel = telVal.replace(/\D/g,'');
-        if(cleanTel.startsWith('549')) cleanTel = cleanTel.slice(3);
-        else if(cleanTel.startsWith('54')) cleanTel = cleanTel.slice(2);
-        let whatsappBtn = telVal ? `<a href="https://wa.me/549${cleanTel}" target="_blank" style="margin-left:5px; text-decoration:none;" title="Abrir WhatsApp">💬</a>` : '';
+        let telVal = (r[8] !== undefined && r[8] !== null) ? r[8].toString() : '';
         let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">🗺️ ${r[6]}</a>` : 'N/A';
 
         return `<tr style="${rowStyle}">
@@ -1485,7 +1481,7 @@
           <td data-label="Recordatorio" style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
           <td data-label="Documento">${r[2] || ''}</td>
           <td data-label="Nombre / Dir"><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
-          <td data-label="Teléfono">${telVal} ${whatsappBtn}</td>
+          <td data-label="Teléfono">${telVal}</td>
           <td data-label="Vendedor"><strong>${r[7] || ''}</strong></td>
           <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
           <td data-label="Acciones"><button onclick="verDetalleAgenda(${agendaGlobal.indexOf(r)})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
