@@ -702,6 +702,7 @@
     let todosLosVendedoresGlobal = [];
     let configuracionCampanasGlobal = {};
     let vistaActualAgenda = 'tabla';
+    let leadConvertiendoDoc = null; // Variable para rastrear el lead que pasa a venta
 
     let toastQueue = [];
     let isProcessingToast = false;
@@ -1317,7 +1318,8 @@
         cluster: document.getElementById('vCluster').value,
         cash: document.getElementById('vCash').value,
         tv: document.getElementById('vTV').value,
-        metodoPago: metodo, datosTarjeta: datosTarjetaVal
+        metodoPago: metodo, datosTarjeta: datosTarjetaVal,
+        origenAgendaDoc: leadConvertiendoDoc // Enviamos referencia para marcar el lead como VENDIDO en la agenda
       };
 
       const rawFiles = [
@@ -1333,7 +1335,9 @@
           if(result.success) {
             showToast(result.msg);
             cerrarModales();
+            leadConvertiendoDoc = null; // Limpiamos la referencia
             cargarVentas();
+            cargarAgenda(); // Refrescamos agenda para que desaparezca el lead convertido
 
             if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
               mostrarAlertaNuevaVenta(datos, usuarioActual.nombre);
@@ -1817,17 +1821,39 @@
       } catch(e) { showToast('Error al reasignar', 'error'); }
     }
 
-    async function convertirEnVenta(doc) {
-      if(!confirm('¿Estás seguro de convertir este contacto en una venta activa?')) return;
-      try {
-        const data = await apiFetch({ action: 'convertirAgenda', doc: doc, userEmail: usuarioActual.email });
-        if(data.success) {
-          showToast(data.msg);
-          cerrarModales();
-          cargarAgenda();
-          cargarVentas();
-        } else { showToast(data.error, 'error'); }
-      } catch(e) { showToast('Error al convertir', 'error'); }
+    // FLUJO MEJORADO: Abre el formulario de Venta pre-llenado en lugar de convertir en silencio
+    function convertirEnVenta(doc) {
+      const contacto = agendaGlobal.find(r => r[2].toString() === doc.toString());
+      if (!contacto) {
+        showToast('Contacto no encontrado en la agenda', 'error');
+        return;
+      }
+
+      leadConvertiendoDoc = doc; // Guardamos la referencia para marcarlo como VENDIDO al guardar
+      cerrarModales();
+      abrirModalVenta();
+
+      // Autocompletar datos del contacto en el formulario de venta
+      document.getElementById('vBuscarDNI').value = contacto[2] || '';
+      document.getElementById('vDoc').value = contacto[2] || '';
+      document.getElementById('vNombre').value = contacto[3] || '';
+      document.getElementById('vApellido').value = contacto[4] || '';
+      document.getElementById('vTel1').value = contacto[8] || '';
+      document.getElementById('vLead').value = contacto[7] || ''; // Vendedor asignado como lead/responsable
+
+      // Seleccionar campaña si coincide
+      const campSelect = document.getElementById('vCampaña');
+      if (campSelect && contacto[1]) {
+        for (let opt of campSelect.options) {
+          if (opt.value.toLowerCase().includes(contacto[1].toLowerCase()) || contacto[1].toLowerCase().includes(opt.value.toLowerCase())) {
+            campSelect.value = opt.value;
+            cambiarCampañaDinamica();
+            break;
+          }
+        }
+      }
+
+      showToast('Lead convertido. Completá los datos faltantes y hacé clic en Guardar.', 'info');
     }
 
     function toggleTipoFiltroReporte() {
