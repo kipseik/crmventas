@@ -702,7 +702,7 @@
     let todosLosVendedoresGlobal = [];
     let configuracionCampanasGlobal = {};
     let vistaActualAgenda = 'tabla';
-    let leadConvertiendoDoc = null; // Variable para almacenar el DNI del lead que se está convirtiendo
+    let leadConvertiendoDoc = null;
 
     let toastQueue = [];
     let isProcessingToast = false;
@@ -1165,6 +1165,7 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    // VISUALIZACIÓN COMPLETA DE TODOS LOS DATOS CARGADOS EN EL MODAL DE DETALLE DE VENTA
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
       let est = r[8] || ESTADOS_VENTA.PENDIENTE;
@@ -1173,6 +1174,29 @@
       let vendedorActual = r[6] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
+
+      // REGLA DE ESTADOS SEGÚN ROL:
+      // Si el usuario es Vendedor: solo puede ver PENDIENTE o CANCELADA. 
+      // Si ya está CANCELADA, se bloquea y solo Admin/TL la puede cambiar.
+      let optionsEstadoHTML = '';
+      if (esAdminTL) {
+        optionsEstadoHTML = `
+          <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
+          <option value="${ESTADOS_VENTA.CUMPLIDA}" ${est===ESTADOS_VENTA.CUMPLIDA?'selected':''}>CUMPLIDA (INSTALADA)</option>
+          <option value="${ESTADOS_VENTA.CANCELADA}" ${est===ESTADOS_VENTA.CANCELADA?'selected':''}>CANCELADA</option>
+          <option value="${ESTADOS_VENTA.RECUPERAR}" ${est===ESTADOS_VENTA.RECUPERAR?'selected':''}>A RECUPERAR</option>
+        `;
+      } else {
+        // Vendedor
+        if (est.toUpperCase() === 'CANCELADA') {
+          optionsEstadoHTML = `<option value="CANCELADA" selected>CANCELADA (Bloqueado para Vendedor)</option>`;
+        } else {
+          optionsEstadoHTML = `
+            <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
+            <option value="${ESTADOS_VENTA.CANCELADA}" ${est===ESTADOS_VENTA.CANCELADA?'selected':''}>CANCELADA</option>
+          `;
+        }
+      }
 
       let linkAdjunto = r[11] || '';
       let previsualizadorHTML = 'Sin adjunto';
@@ -1186,25 +1210,24 @@
         previsualizadorHTML = `
           <div style="margin-top: 6px;">
             <a href="${linkAdjunto}" target="_blank" style="color:#3b82f6; font-weight:bold; display:block; margin-bottom:6px;">🔗 Abrir enlace en pestaña nueva</a>
-            <iframe src="${previewUrl}" width="100%" height="250px" style="border:1px solid #7f9db9; background:#fff;"></iframe>
+            <iframe src="${previewUrl}" width="100%" height="200px" style="border:1px solid #7f9db9; background:#fff;"></iframe>
           </div>
         `;
       }
 
+      let isEstadoDisabled = (!esAdminTL && est.toUpperCase() === 'CANCELADA') ? 'disabled' : '';
+
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
-            <span>○ Detalle Venta — ${r[4]} ${r[5]} (DNI: ${r[3]})</span>
+            <span>○ Detalle Venta — ${r[4] || ''} ${r[5] || ''} (DNI: ${r[3] || ''})</span>
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
           <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-weight: bold;">ESTADO:</span>
-            <select id="detalleNuevoEstado" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
-              <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
-              <option value="${ESTADOS_VENTA.CUMPLIDA}" ${est===ESTADOS_VENTA.CUMPLIDA?'selected':''}>CUMPLIDA (INSTALADA)</option>
-              <option value="${ESTADOS_VENTA.CANCELADA}" ${est===ESTADOS_VENTA.CANCELADA?'selected':''}>CANCELADA</option>
-              <option value="${ESTADOS_VENTA.RECUPERAR}" ${est===ESTADOS_VENTA.RECUPERAR?'selected':''}>A RECUPERAR</option>
+            <select id="detalleNuevoEstado" ${isEstadoDisabled} style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              ${optionsEstadoHTML}
             </select>
 
             ${esAdminTL ? `
@@ -1216,19 +1239,33 @@
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
               <button onclick="guardarCambiosVentaAdminTL('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
-              <span style="font-size: 11px; font-weight: bold;">AGENTE / PROV:</span> <span style="font-weight:bold; color:#1e40af;">${agenteProvActual || 'No asignado'}</span>
-              <button onclick="actualizarEstadoSolo('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+              <button onclick="actualizarEstadoSolo('${r[3]}')" ${isEstadoDisabled} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
 
           <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CAMPAÑA:</b> ${r[1] || '-'} (${r[2] || 'Individuos'})</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>PRODUCTO:</b> ${r[7] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>DOCUMENTO:</b> ${r[3] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>CLIENTE:</b> ${r[4] || ''} ${r[5] || ''}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>VENDEDOR ACTUAL:</b> ${r[6] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 6px;"><b>AGENTE / PROVEEDOR DE CARGA:</b> <span style="color:#000080; font-weight:bold;">${agenteProvActual || 'No definido'}</span></div>
+            <!-- GRILLA COMPLETA DE DATOS CARGADOS -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>FECHA:</b> ${r[0] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>SEGMENTO:</b> ${r[2] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>DNI / DOC:</b> ${r[3] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>NOMBRE:</b> ${r[4] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>APELLIDO:</b> ${r[5] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>VENDEDOR:</b> ${r[6] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PRODUCTO:</b> ${r[7] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>F. NACIMIENTO:</b> ${r[12] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TITULAR:</b> ${r[13] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. ALT:</b> ${r[14] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TOTALIZAR:</b> ${r[15] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>MAIL:</b> ${r[16] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PROVINCIA:</b> ${r[17] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LOCALIDAD:</b> ${r[18] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LEAD:</b> ${r[19] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CLUSTER:</b> ${r[24] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CASH:</b> ${r[25] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TV:</b> ${r[26] || '-'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px; grid-column: span 2;"><b>PAGO / TARJETA:</b> ${r[21] || 'EFECTIVO'}</div>
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
@@ -1294,14 +1331,12 @@
 
       if(!doc || !nombre || !apellido) { showToast('Completá Documento, Nombre y Apellido', 'error'); return; }
       
-      // VALIDACIÓN ESTRICTA DE FECHA DE NACIMIENTO: XX/XX/XXXX
       const fechaRegex = /^\d{2}\/\d{2}\/\d{4}$/;
       if (!fechaRegex.test(fechaNac)) {
         showToast('⚠️ La fecha de nacimiento debe tener el formato estricto DD/MM/AAAA (Ej: 15/05/1990)', 'error');
         return;
       }
 
-      // VALIDACIÓN ESTRICTA DE TELÉFONO: Exactamente 10 dígitos
       const telRegex = /^\d{10}$/;
       if (!telRegex.test(tel1)) {
         showToast('⚠️ El teléfono titular debe contener exactamente 10 dígitos (ni más ni menos).', 'error');
@@ -1338,7 +1373,7 @@
         tv: document.getElementById('vTV').value,
         metodoPago: metodo, 
         datosTarjeta: datosTarjetaVal,
-        origenAgendaDoc: leadConvertiendoDoc // Envía la referencia para marcar el lead como VENDIDO en la agenda del backend
+        origenAgendaDoc: leadConvertiendoDoc
       };
 
       const rawFiles = [
@@ -1354,9 +1389,9 @@
           if(result.success) {
             showToast(result.msg);
             cerrarModales();
-            leadConvertiendoDoc = null; // Limpiamos la referencia
+            leadConvertiendoDoc = null;
             cargarVentas();
-            cargarAgenda(); // Refrescamos agenda para que desaparezca el lead convertido
+            cargarAgenda();
 
             if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
               mostrarAlertaNuevaVenta(datos, usuarioActual.nombre);
@@ -1840,7 +1875,6 @@
       } catch(e) { showToast('Error al reasignar', 'error'); }
     }
 
-    // FLUJO MEJORADO: Abre el formulario de Venta pre-llenado en lugar de convertir en silencio
     function convertirEnVenta(doc) {
       const contacto = agendaGlobal.find(r => r[2].toString() === doc.toString());
       if (!contacto) {
@@ -1848,11 +1882,10 @@
         return;
       }
 
-      leadConvertiendoDoc = doc; // Almacenamos el DNI del lead para marcarlo como VENDIDO al guardar
+      leadConvertiendoDoc = doc; 
       cerrarModales();
       abrirModalVenta();
 
-      // Autocompletar datos principales en el formulario de venta
       document.getElementById('vBuscarDNI').value = contacto[2] || '';
       document.getElementById('vDoc').value = contacto[2] || '';
       document.getElementById('vNombre').value = contacto[3] || '';
@@ -1861,7 +1894,6 @@
       document.getElementById('vLoc').value = contacto[5] || '';
       document.getElementById('vLead').value = contacto[7] || '';
 
-      // Seleccionar campaña si coincide
       const campSelect = document.getElementById('vCampaña');
       if (campSelect && contacto[1]) {
         for (let opt of campSelect.options) {
