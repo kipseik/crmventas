@@ -96,6 +96,7 @@
 </head>
 <body>
 
+  <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="login-wrapper">
     <div class="login-box">
       <div class="login-title">XENEIZES CRM</div>
@@ -106,6 +107,7 @@
     </div>
   </div>
 
+  <!-- APP SCREEN -->
   <div id="appScreen" style="display:none;">
     <nav class="nb-topbar">
       <span class="nb-brand">XENEIZES</span>
@@ -125,7 +127,7 @@
     <div class="nb-page">
       <div id="errorGlobal" style="display:none;"></div>
 
-      <!-- PANEL KPI PERSONALIZADO Y GAMIFICATION DE METAS -->
+      <!-- PANEL KPI PERSONALIZADO Y METAS -->
       <div class="nb-window" style="background: #1e1e1e; padding: 12px; margin-bottom: 16px; border: 1px solid #333;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <div style="font-size: 11px; text-transform: uppercase; color: var(--ink-soft); font-weight: bold;">📊 Tu Rendimiento y Meta del Día</div>
@@ -220,7 +222,7 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA TABLA -->
+        <!-- VISTA TABLA -->
         <div id="contenedorVistaTabla" class="nb-window">
           <div style="overflow-x: auto; max-height: 550px;">
             <table class="nb-table">
@@ -235,7 +237,7 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA KANBAN CON DRAG & DROP -->
+        <!-- VISTA KANBAN -->
         <div id="contenedorVistaKanban" class="nb-window" style="display: none; background: #121212;">
           <div class="kanban-board">
             <div class="kanban-column" ondragover="allowDrop(event)" ondrop="dropKanban(event, 'NUEVO')">
@@ -257,7 +259,7 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA CALENDARIO -->
+        <!-- VISTA CALENDARIO -->
         <div id="contenedorVistaCalendario" class="nb-window" style="display: none; background: #f4f4f4; color: #000; padding: 16px; border-radius: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <button onclick="cambiarMesCalendario(-1)" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">◀ Mes Anterior</button>
@@ -287,7 +289,7 @@
         </div>
       </div>
 
-      <!-- SECCIÓN CONFIGURACIÓN CAMPAÑAS, PRODUCTOS Y COMPAÑÍA (ADMIN) -->
+      <!-- SECCIÓN CONFIGURACIÓN (ADMIN) -->
       <div id="sec-config" class="page-section" style="display: none;">
         <div class="nb-window" style="background: #1e1e1e; padding: 16px; margin-bottom: 16px;">
           <div style="font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">⚙️ GESTIÓN DE CAMPAÑAS, PRODUCTOS Y COMPAÑÍA</div>
@@ -741,6 +743,7 @@
     <div id="contenidoDetalleVenta" style="width: 100%; max-width: 950px; margin: 20px;"></div>
   </div>
 
+  <!-- SCRIPT PRINCIPAL COMPLETO -->
   <script>
     const ESTADOS_VENTA = {
       PENDIENTE: 'PENDIENTE',
@@ -782,6 +785,7 @@
       if (el) el.textContent = val;
     }
 
+    // ESCAPE HTML BLINDADO (Reemplaza comillas, tags y backticks para evitar roturas)
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -789,7 +793,8 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/'/g, '&#039;')
+        .replace(/`/g, '&#096;');
     }
 
     function showToast(msg, type = 'info') {
