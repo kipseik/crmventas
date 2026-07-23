@@ -257,26 +257,33 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA CALENDARIO Y HORARIOS -->
-        <div id="contenedorVistaCalendario" class="nb-window" style="display: none; background: #1a1a1a; padding: 16px;">
-          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
-            <label style="font-weight: bold; font-size: 12px; color: var(--primary);">SELECCIONAR DÍA:</label>
-            <input type="date" id="inputFechaCalendario" class="nb-input" style="width: 200px;" onchange="renderizarVistaCalendario()">
+        <!-- CONTENEDOR VISTA CALENDARIO CLÁSICO CON NÚMEROS NEGROS Y SELECCIÓN AZUL -->
+        <div id="contenedorVistaCalendario" class="nb-window" style="display: none; background: #f4f4f4; color: #000; padding: 16px; border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <button onclick="cambiarMesCalendario(-1)" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">◀ Mes Anterior</button>
+            <h3 id="calMesAnioTitulo" style="margin: 0; color: #000080; font-size: 16px; font-weight: 900; text-transform: uppercase;"></h3>
+            <button onclick="cambiarMesCalendario(1)" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Mes Siguiente ▶</button>
           </div>
-          
+
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 12px; color: #333;">
+            <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div style="color: #0000ff;">Sá</div><div style="color: #ff0000;">Do</div>
+          </div>
+
+          <div id="calDiasGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px;"></div>
+
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px;">
-            <div style="background: #2d2d2d; padding: 12px; border-radius: 4px; text-align: center;">
-              <div style="font-size: 10px; color: #888;">VENTAS REALIZADAS ESTE DÍA</div>
+            <div style="background: #fff; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #ccc;">
+              <div style="font-size: 10px; color: #555; font-weight: bold;">VENTAS REALIZADAS EL DÍA</div>
               <div id="calVentasCount" style="font-size: 26px; font-weight: bold; color: #10b981;">0</div>
             </div>
-            <div style="background: #2d2d2d; padding: 12px; border-radius: 4px; text-align: center;">
-              <div style="font-size: 10px; color: #888;">CONTACTOS / AGENDA ESTE DÍA</div>
+            <div style="background: #fff; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #ccc;">
+              <div style="font-size: 10px; color: #555; font-weight: bold;">CONTACTOS / AGENDA EL DÍA</div>
               <div id="calAgendaCount" style="font-size: 26px; font-weight: bold; color: #3b82f6;">0</div>
             </div>
           </div>
 
-          <div style="font-size: 12px; font-weight: bold; color: var(--ink-soft); margin-bottom: 8px; text-transform: uppercase;">⏰ AGENDA POR HORARIOS DEL DÍA</div>
-          <div id="calHorariosContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 450px; overflow-y: auto;"></div>
+          <div style="font-size: 12px; font-weight: bold; color: #333; margin-bottom: 8px; text-transform: uppercase;">⏰ AGENDA POR HORARIOS DEL DÍA</div>
+          <div id="calHorariosContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;"></div>
         </div>
       </div>
 
@@ -726,6 +733,9 @@
     let configuracionCampanasGlobal = {};
     let vistaActualAgenda = 'tabla';
     let leadConvertiendoDoc = null;
+    let fechaSeleccionadaCal = new Date().toISOString().slice(0, 10);
+    let calAnoActual = new Date().getFullYear();
+    let calMesActual = new Date().getMonth();
 
     let toastQueue = [];
     let isProcessingToast = false;
@@ -1108,7 +1118,7 @@
         let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${r[11]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
         let nroOrdenVal = r[22] || '-';
 
-        return `<tr onclick="verDetalleVenta(${globalIdx})">
+        return `<tr onclick="verDetalleVentaPorDoc('${r[3]}')">
           <td data-label="Fecha">${r[0] || ''}</td>
           <td data-label="Campaña">${r[1] || ''} (${r[2] || 'Individuos'})</td>
           <td data-label="Nro Orden"><strong>${nroOrdenVal}</strong></td>
@@ -1188,9 +1198,14 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // DETALLE DE VENTA CON NUEVA REGLA DE PERMISOS (Admin/TL modifican siempre; Vendedor solo si es A RECUPERAR)
-    function verDetalleVenta(idx) {
-      const r = todasLasVentas[idx];
+    // BÚSQUEDA POR DNI ROBUSTA PARA DETALLE DE VENTA
+    function verDetalleVentaPorDoc(doc) {
+      const r = todasLasVentas.find(item => item[3].toString().trim() === doc.toString().trim());
+      if (!r) {
+        showToast('Venta no encontrada', 'error');
+        return;
+      }
+
       let est = r[8] || ESTADOS_VENTA.PENDIENTE;
       let estUpper = est.toString().trim().toUpperCase();
       let nroOrdenActual = r[22] || '';
@@ -1203,7 +1218,6 @@
       let isReadonly = '';
 
       if (esAdminTL) {
-        // Admin y Team Leader pueden modificar en cualquier estado
         optionsEstadoHTML = `
           <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
           <option value="${ESTADOS_VENTA.CUMPLIDA}" ${est===ESTADOS_VENTA.CUMPLIDA?'selected':''}>CUMPLIDA (INSTALADA)</option>
@@ -1211,7 +1225,6 @@
           <option value="${ESTADOS_VENTA.RECUPERAR}" ${est===ESTADOS_VENTA.RECUPERAR?'selected':''}>A RECUPERAR</option>
         `;
       } else {
-        // Vendedor: Solo puede modificar si la venta está en estado A RECUPERAR
         if (estUpper !== 'A RECUPERAR') {
           isReadonly = 'disabled';
           optionsEstadoHTML = `<option value="${est}" selected>${est} (Solo lectura para Vendedor)</option>`;
@@ -1267,7 +1280,6 @@
           </div>
 
           <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
-            <!-- GRILLA COMPLETA DE TODOS LOS DATOS CARGADOS -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>FECHA:</b> ${r[0] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
@@ -1475,7 +1487,7 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN Y VISTA CALENDARIO
+    // GESTIÓN DE AGENDA, KANBAN Y VISTA CALENDARIO CLÁSICO CON NÚMEROS NEGROS Y SELECCIÓN AZUL
     async function cargarAgenda() {
       const tbody = document.getElementById('tablaAgenda');
       if (tbody && !agendaGlobal.length) {
@@ -1524,39 +1536,88 @@
         if(btnC) { btnC.style.background = 'var(--surface-2)'; btnC.style.color = 'var(--ink)'; }
       } else if(vista === 'calendario') {
         if(t) t.style.display = 'none';
-        if(k) k.style.display = 'none';
+        if(k) t.style.display = 'none';
         if(c) c.style.display = 'block';
         if(btnC) { btnC.style.background = 'var(--primary)'; btnC.style.color = '#fff'; }
         if(btnT) { btnT.style.background = 'var(--surface-2)'; btnT.style.color = 'var(--ink)'; }
         if(btnK) { btnK.style.background = 'var(--surface-2)'; btnK.style.color = 'var(--ink)'; }
 
-        const inputFecha = document.getElementById('inputFechaCalendario');
-        if(inputFecha && !inputFecha.value) {
-          inputFecha.value = new Date().toISOString().slice(0, 10);
-        }
         renderizarVistaCalendario();
       }
     }
 
-    function renderizarVistaCalendario() {
-      const inputFecha = document.getElementById('inputFechaCalendario');
-      if(!inputFecha || !inputFecha.value) return;
-      const fechaSeleccionada = inputFecha.value; // Formato YYYY-MM-DD
+    function cambiarMesCalendario(delta) {
+      calMesActual += delta;
+      if (calMesActual > 11) {
+        calMesActual = 0;
+        calAnoActual++;
+      } else if (calMesActual < 0) {
+        calMesActual = 11;
+        calAnoActual--;
+      }
+      renderizarVistaCalendario();
+    }
 
-      // Filtrar ventas realizadas en este día
+    function renderizarVistaCalendario() {
+      const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      setText('calMesAnioTitulo', `${mesesNombres[calMesActual]} ${calAnoActual}`);
+
+      const grid = document.getElementById('calDiasGrid');
+      if(!grid) return;
+      grid.innerHTML = '';
+
+      const primerDia = new Date(calAnoActual, calMesActual, 1);
+      let diaSemanaInicio = primerDia.getDay() - 1;
+      if (diaSemanaInicio === -1) diaSemanaInicio = 6;
+
+      const ultimoDia = new Date(calAnoActual, calMesActual + 1, 0).getDate();
+
+      for (let i = 0; i < diaSemanaInicio; i++) {
+        const celdaVacia = document.createElement('div');
+        grid.appendChild(celdaVacia);
+      }
+
+      for (let dia = 1; dia <= ultimoDia; dia++) {
+        const mesStr = String(calMesActual + 1).padStart(2, '0');
+        const diaStr = String(dia).padStart(2, '0');
+        const fechaIsoStr = `${calAnoActual}-${mesStr}-${diaStr}`;
+
+        const celda = document.createElement('div');
+        celda.textContent = dia;
+        celda.style.padding = '12px 4px';
+        celda.style.textAlign = 'center';
+        celda.style.borderRadius = '4px';
+        celda.style.cursor = 'pointer';
+        celda.style.fontSize = '14px';
+        celda.style.fontWeight = 'bold';
+        celda.style.border = '1px solid #ccc';
+        celda.style.background = '#fff';
+        celda.style.color = '#000'; // Números en negro
+
+        if (fechaIsoStr === fechaSeleccionadaCal) {
+          celda.style.background = '#3b82f6'; // Se tilda de azul el día seleccionado / de hoy
+          celda.style.color = '#fff';
+          celda.style.borderColor = '#1d4ed8';
+        }
+
+        celda.onclick = () => {
+          fechaSeleccionadaCal = fechaIsoStr;
+          renderizarVistaCalendario();
+        };
+
+        grid.appendChild(celda);
+      }
+
+      // Filtrar métricas y horarios para la fecha seleccionada
       const ventasDelDia = todasLasVentas.filter(r => {
-        let fechaVentaRaw = r[0] ? r[0].toString() : '';
-        let iso = parseFechaVenta(fechaVentaRaw);
-        return iso === fechaSeleccionada;
+        let iso = parseFechaVenta(r[0] ? r[0].toString() : '');
+        return iso === fechaSeleccionadaCal;
       });
 
-      // Filtrar contactos de agenda de este día (por recordatorio o fecha de asignación)
       const agendaDelDia = agendaGlobal.filter(r => {
-        let recRaw = r[11] ? r[11].toString() : '';
-        let fechaAsigRaw = r[0] ? r[0].toString() : '';
-        let recIso = recRaw.slice(0, 10);
-        let asigIso = parseFechaVenta(fechaAsigRaw);
-        return recIso === fechaSeleccionada || asigIso === fechaSeleccionada;
+        let recIso = r[11] ? r[11].toString().slice(0, 10) : '';
+        let asigIso = parseFechaVenta(r[0] ? r[0].toString() : '');
+        return recIso === fechaSeleccionadaCal || asigIso === fechaSeleccionadaCal;
       });
 
       setText('calVentasCount', ventasDelDia.length);
@@ -1566,11 +1627,10 @@
       if(!contenedorHorarios) return;
 
       if(agendaDelDia.length === 0) {
-        contenedorHorarios.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--ink-soft);">No hay contactos programados para este día.</div>`;
+        contenedorHorarios.innerHTML = `<div style="text-align: center; padding: 20px; color: #666; background: #fff; border: 1px solid #ccc; border-radius: 4px;">No hay contactos programados para el ${fechaSeleccionadaCal}.</div>`;
         return;
       }
 
-      // Ordenar por hora de recordatorio
       agendaDelDia.sort((a, b) => {
         let horaA = a[11] ? a[11].toString() : '99:99';
         let horaB = b[11] ? b[11].toString() : '99:99';
@@ -1580,15 +1640,14 @@
       contenedorHorarios.innerHTML = agendaDelDia.map(r => {
         let horaStr = r[11] ? String(r[11]).replace('T', ' ') : 'Sin hora específica';
         let est = r[10] || 'NUEVO';
-        let globalIdx = agendaGlobal.indexOf(r);
         return `
-          <div style="background: #262626; border-left: 4px solid var(--primary); padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div style="background: #fff; border: 1px solid #ccc; border-left: 4px solid #3b82f6; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #000;">
             <div>
-              <div style="font-size: 11px; font-weight: bold; color: var(--primary);">⏰ ${horaStr}</div>
+              <div style="font-size: 11px; font-weight: bold; color: #1e40af;">⏰ ${horaStr}</div>
               <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">${r[3]} ${r[4]} (DNI: ${r[2]})</div>
-              <div style="font-size: 10px; color: var(--ink-soft);">Tel: ${r[8]} | Dir: ${r[5] || 'Sin dir'} | Estado: <b>${est}</b></div>
+              <div style="font-size: 10px; color: #555;">Tel: ${r[8]} | Dir: ${r[5] || 'Sin dir'} | Estado: <b>${est}</b></div>
             </div>
-            <button onclick="verDetalleAgenda(${globalIdx})" class="nb-btn nb-btn-sm nb-btn-primary">Ver / Gestionar</button>
+            <button onclick="verDetalleAgendaPorDoc('${r[2]}')" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Ver / Gestionar</button>
           </div>
         `;
       }).join('');
@@ -1607,7 +1666,6 @@
         } else {
           let dt = new Date(fechaStr);
           if (!isNaN(dt)) {
-            const tz = 'America/Argentina/Buenos_Aires';
             return dt.toISOString().slice(0, 10);
           }
         }
@@ -1663,7 +1721,7 @@
           <td data-label="Teléfono">${telVal}</td>
           <td data-label="Vendedor"><strong>${r[7] || ''}</strong></td>
           <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
-          <td data-label="Acciones"><button onclick="verDetalleAgenda(${agendaGlobal.indexOf(r)})" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+          <td data-label="Acciones"><button onclick="verDetalleAgendaPorDoc('${r[2]}')" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
       }).join('');
 
@@ -1683,10 +1741,9 @@
       colDescartados.innerHTML = '';
 
       data.forEach((r) => {
-        let globalIdx = agendaGlobal.indexOf(r);
         let est = (r[10] || 'NUEVO').toUpperCase();
         let cardHTML = `
-          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${r[2]}')" onclick="verDetalleAgenda(${globalIdx})">
+          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${r[2]}')" onclick="verDetalleAgendaPorDoc('${r[2]}')">
             <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${r[3]} ${r[4]}</div>
             <div style="font-size:10px; color:var(--ink-soft);">DNI: ${r[2]} | Tel: ${r[8]}</div>
             <div style="font-size:10px; margin-top:4px;">📍 ${r[5] || 'Sin dir'}</div>
@@ -1700,6 +1757,83 @@
         else if(est === 'DESCARTADO') colDescartados.innerHTML += cardHTML;
         else colNuevos.innerHTML += cardHTML;
       });
+    }
+
+    // BÚSQUEDA ROBUSTA POR DNI PARA EL DETALLE DE AGENDA (EVITA ERRORES DE ÍNDICE)
+    function verDetalleAgendaPorDoc(doc) {
+      const r = agendaGlobal.find(item => item[2].toString().trim() === doc.toString().trim());
+      if (!r) {
+        showToast('Contacto no encontrado en la agenda', 'error');
+        return;
+      }
+
+      let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
+      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[7].toLowerCase()?'selected':''}>${v}</option>`).join('');
+      let estadoActual = r[10] || 'NUEVO';
+      let motivoActual = r[12] || 'NO LE INTERESA';
+
+      const html = `
+        <div style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 16px; border-radius: 6px; font-size: 12px;">
+          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
+          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'} | <b>GPS:</b> <a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">${r[6] || 'N/A'}</a></div>
+          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[8]}</div>
+          <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${r[7]}</div>
+
+          ${esAdminTL ? `
+            <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
+              <label style="display:block; margin-bottom: 4px; color: var(--ink-soft);">REASIGNAR A OTRO VENDEDOR:</label>
+              <select id="agNuevoVendedor" style="width: 100%; padding: 4px; background: #1a1a1a; color: #fff; border: 1px solid #555;">${optionsVend}</select>
+              <button onclick="reasignarContactoLead('${r[2]}')" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
+            </div>
+          ` : ''}
+
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">📅 FECHA Y HORA DE PRÓXIMO RECORDATORIO:</label>
+            <input type="datetime-local" id="agNuevoRecordatorio" value="${r[11] || ''}" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">ESTADO:</label>
+            <select id="agNuevoEstado" onchange="toggleMotivoDescarteDetalle()" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
+              <option value="NUEVO" ${estadoActual==='NUEVO'?'selected':''}>NUEVO</option>
+              <option value="CONTACTADO" ${estadoActual==='CONTACTADO'?'selected':''}>CONTACTADO</option>
+              <option value="DESCARTADO" ${estadoActual==='DESCARTADO'?'selected':''}>DESCARTADO</option>
+              <option value="VENDIDO" ${estadoActual==='VENDIDO'?'selected':''}>VENDIDO</option>
+            </select>
+          </div>
+
+          <div id="containerMotivoDescarte" style="margin-bottom: 10px; display: ${estadoActual==='DESCARTADO'?'block':'none'}; background: rgba(239,68,68,0.1); padding: 8px; border: 1px solid var(--accent);">
+            <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight:bold;">MOTIVO DE DESCARTE *</label>
+            <select id="agMotivoDescarte" onchange="toggleCoordenadasObligatorias()" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid #555; margin-bottom: 8px;">
+              <option value="NO LE INTERESA" ${motivoActual==='NO LE INTERESA'?'selected':''}>NO LE INTERESA</option>
+              <option value="SIN COBERTURA" ${motivoActual==='SIN COBERTURA'?'selected':''}>SIN COBERTURA</option>
+              <option value="SATURADO" ${motivoActual==='SATURADO'?'selected':''}>SATURADO</option>
+            </select>
+
+            <div id="containerCoordsObligatorias" style="display: ${ (motivoActual==='SIN COBERTURA' || motivoActual==='SATURADO') ? 'block' : 'none' };">
+              <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS (Ej: -34.6037, -58.3816) *</label>
+              <input type="text" id="agDescarteCoordsInput" value="${r[6] || ''}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; margin-bottom: 4px;">NUEVO COMENTARIO / SEGUIMIENTO:</label>
+            <textarea id="agNuevoComentario" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555; height: 50px;" placeholder="Escribe el resultado del llamado..."></textarea>
+          </div>
+
+          <div style="background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 12px; max-height: 90px; overflow-y: auto; font-family: monospace; font-size: 11px;">
+            <b>Historial de Comentarios:</b><br>${r[9] || 'Sin comentarios'}
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button onclick="convertirEnVenta('${r[2]}')" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
+            <button onclick="guardarSeguimientoAgenda('${r[2]}')" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
+            <button onclick="cerrarModales()" class="nb-btn" style="background: #444;">Cerrar</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('contenidoDetalleAgenda').innerHTML = html;
+      document.getElementById('modalDetalleAgenda').style.display = 'flex';
     }
 
     function dragKanban(event, dni) {
@@ -1871,6 +2005,90 @@
         if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al guardar contacto', 'error'); }
+    }
+
+    function toggleMotivoDescarteDetalle() {
+      const est = document.getElementById('agNuevoEstado').value;
+      const cont = document.getElementById('containerMotivoDescarte');
+      if(cont) cont.style.display = est === 'DESCARTADO' ? 'block' : 'none';
+      if(est === 'DESCARTADO') toggleCoordenadasObligatorias();
+    }
+
+    function toggleCoordenadasObligatorias() {
+      const motivo = document.getElementById('agMotivoDescarte').value;
+      const contCoords = document.getElementById('containerCoordsObligatorias');
+      if(contCoords) {
+        contCoords.style.display = (motivo === 'SIN COBERTURA' || motivo === 'SATURADO') ? 'block' : 'none';
+      }
+    }
+
+    async function guardarSeguimientoAgenda(doc) {
+      const nuevoEst = document.getElementById('agNuevoEstado').value;
+      const motivoDesc = document.getElementById('agMotivoDescarte') ? document.getElementById('agMotivoDescarte').value : '';
+      const coordsInput = document.getElementById('agDescarteCoordsInput') ? document.getElementById('agDescarteCoordsInput').value.trim() : '';
+      const comentario = document.getElementById('agNuevoComentario').value.trim();
+      const nuevaRec = document.getElementById('agNuevoRecordatorio').value;
+
+      if (nuevoEst === 'DESCARTADO' && (motivoDesc === 'SIN COBERTURA' || motivoDesc === 'SATURADO')) {
+        if (!coordsInput) {
+          showToast('⚠️ Las coordenadas son obligatorias para descarte por Sin Cobertura o Saturado.', 'error');
+          return;
+        }
+        const coordsRegex = /^-?\d+\.?\d*,\s*-?\d+\.?\d*$/;
+        if (!coordsRegex.test(coordsInput)) {
+          showToast('⚠️ Formato de coordenadas inválido. Usá: -34.6037, -58.3816', 'error');
+          return;
+        }
+      }
+
+      try {
+        const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, coordsDescarte: coordsInput, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email });
+        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al actualizar', 'error'); }
+    }
+
+    async function reasignarContactoLead(doc) {
+      const nuevoVend = document.getElementById('agNuevoVendedor').value;
+      if (!confirm(`¿Confirmar reasignación a ${nuevoVend}?`)) return;
+      try {
+        const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, coordsDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email });
+        if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
+        else { showToast(data.error, 'error'); }
+      } catch(e) { showToast('Error al reasignar', 'error'); }
+    }
+
+    function convertirEnVenta(doc) {
+      const contacto = agendaGlobal.find(r => r[2].toString() === doc.toString());
+      if (!contacto) {
+        showToast('Contacto no encontrado en la agenda', 'error');
+        return;
+      }
+
+      leadConvertiendoDoc = doc; 
+      cerrarModales();
+      abrirModalVenta();
+
+      document.getElementById('vBuscarDNI').value = contacto[2] || '';
+      document.getElementById('vDoc').value = contacto[2] || '';
+      document.getElementById('vNombre').value = contacto[3] || '';
+      document.getElementById('vApellido').value = contacto[4] || '';
+      document.getElementById('vTel1').value = contacto[8] || '';
+      document.getElementById('vLoc').value = contacto[5] || '';
+      document.getElementById('vLead').value = contacto[7] || '';
+
+      const campSelect = document.getElementById('vCampaña');
+      if (campSelect && contacto[1]) {
+        for (let opt of campSelect.options) {
+          if (opt.value.toLowerCase().includes(contacto[1].toLowerCase()) || contacto[1].toLowerCase().includes(opt.value.toLowerCase())) {
+            campSelect.value = opt.value;
+            cambiarCampañaDinamica();
+            break;
+          }
+        }
+      }
+
+      showToast('Lead convertido. Completá los datos restantes y hacé clic en Guardar.', 'info');
     }
 
     function toggleTipoFiltroReporte() {
