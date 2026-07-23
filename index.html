@@ -1725,6 +1725,26 @@
       }).join('');
     }
 
+    function parseFechaVenta(fechaStr) {
+      if (!fechaStr) return null;
+      try {
+        let partes = fechaStr.toString().split(' ')[0].split('/');
+        if (partes.length === 3) {
+          let d = parseInt(partes[0]), m = parseInt(partes[1]) - 1, y = parseInt(partes[2]);
+          let date = new Date(y, m, d);
+          if (date.getDate() === d && date.getMonth() === m && date.getFullYear() === y) {
+            return `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+          }
+        } else {
+          let dt = new Date(fechaStr);
+          if (!isNaN(dt)) {
+            return dt.toISOString().slice(0, 10);
+          }
+        }
+      } catch(e) {}
+      return null;
+    }
+
     function renderAgenda(data) {
       const tbody = document.getElementById('tablaAgenda');
       if(!tbody) return;
@@ -2284,17 +2304,28 @@
             selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${escapeHtml(tl)}">${escapeHtml(tl)}</option>`).join('');
           }
 
-          tbody.innerHTML = data.rows.map(r => `
-            <tr>
-              <td><strong>${escapeHtml(r[0])}</strong></td>
-              <td>${escapeHtml(r[1])}</td>
-              <td>${escapeHtml(r[2])}</td>
-              <td>${escapeHtml(r[3] || '-')}</td>
-              <td>${escapeHtml(r[4])}</td>
-              <td>${escapeHtml(r[5])}</td>
-              <td><button onclick="editarUser('${escapeHtml(r[0])}','${escapeHtml(r[1])}','${escapeHtml(r[2])}','${escapeHtml(r[3])}','${escapeHtml(r[4])}','${escapeHtml(r[5])}')" class="nb-btn nb-btn-sm">Editar</button></td>
-            </tr>
-          `).join('');
+          let rowsHTML = '';
+          data.rows.forEach((r, idx) => {
+            rowsHTML += `
+              <tr>
+                <td><strong>${escapeHtml(r[0])}</strong></td>
+                <td>${escapeHtml(r[1])}</td>
+                <td>${escapeHtml(r[2])}</td>
+                <td>${escapeHtml(r[3] || '-')}</td>
+                <td>${escapeHtml(r[4])}</td>
+                <td>${escapeHtml(r[5])}</td>
+                <td><button data-idx="${idx}" class="btn-edit-user nb-btn nb-btn-sm">Editar</button></td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = rowsHTML || "<tr><td colspan='7' style='text-align:center;'>Sin usuarios</td></tr>";
+
+          tbody.querySelectorAll('.btn-edit-user').forEach(btn => {
+            btn.onclick = () => {
+              const r = data.rows[parseInt(btn.dataset.idx)];
+              editarUser(r[0], r[1], r[2], r[3], r[4], r[5]);
+            };
+          });
         }
       } catch(err) { showToast(err.message, 'error'); }
     }
