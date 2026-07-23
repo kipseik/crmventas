@@ -1725,26 +1725,6 @@
       }).join('');
     }
 
-    function parseFechaVenta(fechaStr) {
-      if (!fechaStr) return null;
-      try {
-        let partes = fechaStr.toString().split(' ')[0].split('/');
-        if (partes.length === 3) {
-          let d = parseInt(partes[0]), m = parseInt(partes[1]) - 1, y = parseInt(partes[2]);
-          let date = new Date(y, m, d);
-          if (date.getDate() === d && date.getMonth() === m && date.getFullYear() === y) {
-            return `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
-          }
-        } else {
-          let dt = new Date(fechaStr);
-          if (!isNaN(dt)) {
-            return dt.toISOString().slice(0, 10);
-          }
-        }
-      } catch(e) {}
-      return null;
-    }
-
     function renderAgenda(data) {
       const tbody = document.getElementById('tablaAgenda');
       if(!tbody) return;
