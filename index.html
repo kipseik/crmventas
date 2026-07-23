@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>VENTAS CRM - PACES</title>
+  <title>XENEIZES CRM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
@@ -98,7 +98,7 @@
 
   <div id="loginScreen" class="login-wrapper">
     <div class="login-box">
-      <div class="login-title">PACES CRM</div>
+      <div class="login-title">XENEIZES CRM</div>
       <input type="email" id="loginEmail" class="login-input" placeholder="Email" autocomplete="username">
       <input type="password" id="loginPass" class="login-input" placeholder="Contraseña" autocomplete="current-password" onkeypress="if(event.key==='Enter') hacerLogin()">
       <button onclick="hacerLogin()" id="btnLogin" class="login-btn">INGRESAR</button>
@@ -108,7 +108,7 @@
 
   <div id="appScreen" style="display:none;">
     <nav class="nb-topbar">
-      <span class="nb-brand">PACES</span>
+      <span class="nb-brand">XENEIZES</span>
       <div class="nb-nav-links">
         <a class="nb-nav-link active" onclick="navTo('sec-ventas', this)">Ventas</a>
         <a class="nb-nav-link" onclick="navTo('sec-agenda', this)">📅 Agenda / Pipeline</a>
@@ -349,7 +349,7 @@
             <div class="rep-box">
               <div class="rep-box-title">PENDIENTES (FIBRA)</div>
               <div class="rep-box-val" id="repPendientes" style="color:#d97706;">-</div>
-              <div class="rep-box-sub">con orden · PACES</div>
+              <div class="rep-box-sub">con orden · XENEIZES</div>
             </div>
             <div class="rep-box">
               <div class="rep-box-title">TV CUMPLIDAS</div>
@@ -1136,7 +1136,7 @@
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `ventas_paces_${tipo}_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", `ventas_xeneizes_${tipo}_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
@@ -1165,11 +1165,11 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // VISUALIZACIÓN COMPLETA DE TODOS LOS DATOS Y REGLA DE ESTADOS POR ROL
+    // MODAL DE DETALLE DE VENTA CON REGLA DE ESTADOS ESTRICTA SEGÚN ROL Y ESTADO ACTUAL
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
       let est = r[8] || ESTADOS_VENTA.PENDIENTE;
-      let estUpper = est.toUpperCase();
+      let estUpper = est.toString().trim().toUpperCase();
       let nroOrdenActual = r[22] || '';
       let agenteProvActual = r[23] || '';
       let vendedorActual = r[6] || '';
@@ -1177,9 +1177,10 @@
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
       let optionsEstadoHTML = '';
-      let isEstadoDisabled = '';
+      let inputsDisabled = '';
 
       if (esAdminTL) {
+        // Administrador y Team Leader pueden modificar en cualquier estado
         optionsEstadoHTML = `
           <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
           <option value="${ESTADOS_VENTA.CUMPLIDA}" ${est===ESTADOS_VENTA.CUMPLIDA?'selected':''}>CUMPLIDA (INSTALADA)</option>
@@ -1187,14 +1188,15 @@
           <option value="${ESTADOS_VENTA.RECUPERAR}" ${est===ESTADOS_VENTA.RECUPERAR?'selected':''}>A RECUPERAR</option>
         `;
       } else {
-        // Vendedor
-        if (estUpper === 'CANCELADA') {
-          optionsEstadoHTML = `<option value="CANCELADA" selected>CANCELADA (Bloqueado)</option>`;
-          isEstadoDisabled = 'disabled';
+        // Vendedor: Solo puede modificar si la venta está en estado A RECUPERAR
+        if (estUpper !== 'A RECUPERAR') {
+          inputsDisabled = 'disabled';
+          optionsEstadoHTML = `<option value="${est}" selected>${est} (Bloqueado para Vendedor)</option>`;
         } else {
+          // Si está en A RECUPERAR, solo puede cambiar a PENDIENTE o CANCELADA
           optionsEstadoHTML = `
-            <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
-            <option value="${ESTADOS_VENTA.CANCELADA}" ${est===ESTADOS_VENTA.CANCELADA?'selected':''}>CANCELADA</option>
+            <option value="${ESTADOS_VENTA.PENDIENTE}">PENDIENTE</option>
+            <option value="${ESTADOS_VENTA.CANCELADA}">CANCELADA</option>
           `;
         }
       }
@@ -1225,7 +1227,7 @@
 
           <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-weight: bold;">ESTADO:</span>
-            <select id="detalleNuevoEstado" ${isEstadoDisabled} style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+            <select id="detalleNuevoEstado" ${inputsDisabled} style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               ${optionsEstadoHTML}
             </select>
 
@@ -1238,7 +1240,7 @@
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
               <button onclick="guardarCambiosVentaAdminTL('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
-              <button onclick="actualizarEstadoSolo('${r[3]}')" ${isEstadoDisabled} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+              <button onclick="actualizarEstadoSolo('${r[3]}')" ${inputsDisabled} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
 
@@ -1274,8 +1276,8 @@
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
               <b>HISTORIAL Y OBSERVACIONES:</b>
-              <textarea id="detalleObs" style="width: 100%; height: 50px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;" placeholder="Escribe tu observación..."></textarea>
-              <button onclick="actualizarObs('${r[3]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>
+              <textarea id="detalleObs" ${inputsDisabled} style="width: 100%; height: 50px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;" placeholder="Escribe tu observación..."></textarea>
+              ${(!inputsDisabled) ? `<button onclick="actualizarObs('${r[3]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>` : ''}
               <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${r[20] || 'Sin notas'}</pre>
             </div>
           </div>
@@ -1962,7 +1964,7 @@
 
           let pctCancelado = data.totalIngresadas > 0 ? ((data.cancelado / data.totalIngresadas) * 100).toFixed(1) : '0';
           setText('repCanceladoVal', data.cancelado);
-          setText('repCanceladoPct', `de ${data.totalIngresadas} ingresadas · PACES`);
+          setText('repCanceladoPct', `de ${data.totalIngresadas} ingresadas · XENEIZES`);
 
           setText('repPendientes', data.pendientes);
 
