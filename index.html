@@ -1160,7 +1160,7 @@
         let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${escapeHtml(r[11])}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
         let nroOrdenVal = r[22] || '-';
 
-        return `<tr onclick="verDetalleVentaPorDoc('${escapeHtml(r[3])}')">
+        return `<tr class="fila-venta" data-doc="${escapeHtml(r[3])}" style="cursor:pointer;">
           <td data-label="Fecha">${escapeHtml(r[0] || '')}</td>
           <td data-label="Campaña">${escapeHtml(r[1] || '')} (${escapeHtml(r[2] || 'Individuos'})</td>
           <td data-label="Nro Orden"><strong>${escapeHtml(nroOrdenVal)}</strong></td>
@@ -1172,6 +1172,10 @@
           <td data-label="Adjuntos">${adjHTML}</td>
         </tr>`;
       }).join('');
+
+      tbody.querySelectorAll('.fila-venta').forEach(tr => {
+        tr.onclick = () => verDetalleVentaPorDoc(tr.dataset.doc);
+      });
     }
 
     function buscarClienteDNI() {
@@ -1273,7 +1277,7 @@
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
             <span>○ Detalle Venta — ${escapeHtml(r[4] || '')} ${escapeHtml(r[5] || '')} (DNI: ${escapeHtml(r[3] || '')})</span>
-            <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
+            <button class="btn-cerrar-modal" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
           <div style="background: #e0e0e0; padding: 8px 12px; border-bottom: 1px solid #808080; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1289,9 +1293,9 @@
               <input type="text" id="detalleAgenteProveedor" value="${escapeHtml(agenteProvActual)}" placeholder="Ej: Damatec" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <span style="font-size: 11px; font-weight: bold;">VENDEDOR:</span>
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
-              <button onclick="guardarCambiosVentaAdminTL('${escapeHtml(r[3])}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
+              <button id="btnGuardarTodoVenta" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
-              <button onclick="actualizarEstadoSolo('${escapeHtml(r[3])}')" ${isReadonly} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+              <button id="btnGuardarEstadoSolo" ${isReadonly} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
 
@@ -1327,17 +1331,27 @@
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
               <b>HISTORIAL Y OBSERVACIONES:</b>
               <textarea id="detalleObs" ${isReadonly} style="width: 100%; height: 50px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;" placeholder="Escribe tu observación..."></textarea>
-              ${(!isReadonly) ? `<button onclick="actualizarObs('${escapeHtml(r[3])}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>` : ''}
+              ${(!isReadonly) ? `<button id="btnAgregarObs" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>` : ''}
               <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${escapeHtml(r[20] || 'Sin notas')}</pre>
             </div>
           </div>
           <div style="padding: 8px 12px; display: flex; justify-content: flex-end; background: #d4d0c8; border-top: 1px solid #fff;">
-            <button onclick="cerrarModales()" style="padding: 4px 20px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Cerrar</button>
+            <button class="btn-cerrar-modal" style="padding: 4px 20px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Cerrar</button>
           </div>
         </div>
       `;
-      document.getElementById('contenidoDetalleVenta').innerHTML = html;
+
+      const modalContainer = document.getElementById('contenidoDetalleVenta');
+      modalContainer.innerHTML = html;
       document.getElementById('modalDetalleVenta').style.display = 'flex';
+
+      modalContainer.querySelectorAll('.btn-cerrar-modal').forEach(b => b.onclick = cerrarModales);
+      const btnGuardarTodo = document.getElementById('btnGuardarTodoVenta');
+      if(btnGuardarTodo) btnGuardarTodo.onclick = () => guardarCambiosVentaAdminTL(r[3]);
+      const btnGuardarEstado = document.getElementById('btnGuardarEstadoSolo');
+      if(btnGuardarEstado) btnGuardarEstado.onclick = () => actualizarEstadoSolo(r[3]);
+      const btnAddObs = document.getElementById('btnAgregarObs');
+      if(btnAddObs) btnAddObs.onclick = () => actualizarObs(r[3]);
     }
 
     async function actualizarEstadoSolo(doc) {
@@ -1709,20 +1723,46 @@
         return horaA.localeCompare(horaB);
       });
 
-      contenedorHorarios.innerHTML = agendaDelDia.map(r => {
+      let horariosHTML = '';
+      agendaDelDia.forEach((r, idx) => {
         let horaStr = r[11] ? String(r[11]).replace('T', ' ') : 'Sin hora específica';
         let est = r[10] || 'NUEVO';
-        return `
+        horariosHTML += `
           <div style="background: #fff; border: 1px solid #ccc; border-left: 4px solid #3b82f6; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #000;">
             <div>
               <div style="font-size: 11px; font-weight: bold; color: #1e40af;">⏰ ${escapeHtml(horaStr)}</div>
               <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">${escapeHtml(r[3])} ${escapeHtml(r[4])} (DNI: ${escapeHtml(r[2])})</div>
               <div style="font-size: 10px; color: #555;">Tel: ${escapeHtml(r[8])} | Dir: ${escapeHtml(r[5] || 'Sin dir')} | Estado: <b>${escapeHtml(est)}</b></div>
             </div>
-            <button onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Ver / Gestionar</button>
+            <button data-doc="${escapeHtml(r[2])}" class="btn-cal-agenda nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Ver / Gestionar</button>
           </div>
         `;
-      }).join('');
+      });
+      contenedorHorarios.innerHTML = horariosHTML;
+
+      contenedorHorarios.querySelectorAll('.btn-cal-agenda').forEach(btn => {
+        btn.onclick = () => verDetalleAgendaPorDoc(btn.dataset.doc);
+      });
+    }
+
+    function parseFechaVenta(fechaStr) {
+      if (!fechaStr) return null;
+      try {
+        let partes = fechaStr.toString().split(' ')[0].split('/');
+        if (partes.length === 3) {
+          let d = parseInt(partes[0]), m = parseInt(partes[1]) - 1, y = parseInt(partes[2]);
+          let date = new Date(y, m, d);
+          if (date.getDate() === d && date.getMonth() === m && date.getFullYear() === y) {
+            return `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+          }
+        } else {
+          let dt = new Date(fechaStr);
+          if (!isNaN(dt)) {
+            return dt.toISOString().slice(0, 10);
+          }
+        }
+      } catch(e) {}
+      return null;
     }
 
     function renderAgenda(data) {
@@ -1734,7 +1774,8 @@
       }
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
 
-      tbody.innerHTML = data.map((r) => {
+      let rowsHTML = '';
+      data.forEach((r) => {
         let est = r[10] || 'NUEVO';
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : (est === 'DESCARTADO' ? 'nb-badge-red' : 'nb-badge-yellow'));
         let fechaRec = r[11] ? String(r[11]).replace('T', ' ') : '-';
@@ -1749,7 +1790,7 @@
         let telVal = (r[8] !== undefined && r[8] !== null) ? r[8].toString() : '';
         let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${escapeHtml(r[6])}" target="_blank" style="color:#60a5fa;">🗺️ ${escapeHtml(r[6])}</a>` : 'N/A';
 
-        return `<tr style="${rowStyle}">
+        rowsHTML += `<tr style="${rowStyle}">
           <td data-label="Seleccionar">${checkHTML}</td>
           <td data-label="Fecha">${escapeHtml(r[0] || '')}</td>
           <td data-label="Recordatorio" style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${escapeHtml(fechaRec)}</td>
@@ -1758,9 +1799,14 @@
           <td data-label="Teléfono">${escapeHtml(telVal)}</td>
           <td data-label="Vendedor"><strong>${escapeHtml(r[7] || '')}</strong></td>
           <td data-label="Estado"><span class="nb-badge ${bClass}">${escapeHtml(est)}</span></td>
-          <td data-label="Acciones"><button onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+          <td data-label="Acciones"><button data-doc="${escapeHtml(r[2])}" class="btn-agenda-det nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
-      }).join('');
+      });
+      tbody.innerHTML = rowsHTML;
+
+      tbody.querySelectorAll('.btn-agenda-det').forEach(btn => {
+        btn.onclick = () => verDetalleAgendaPorDoc(btn.dataset.doc);
+      });
 
       actualizarBarraMasiva();
     }
@@ -1777,10 +1823,12 @@
       colVendidos.innerHTML = '';
       colDescartados.innerHTML = '';
 
+      let htmlNuevos = '', htmlContactados = '', htmlVendidos = '', htmlDescartados = '';
+
       data.forEach((r) => {
         let est = (r[10] || 'NUEVO').toUpperCase();
         let cardHTML = `
-          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${escapeHtml(r[2])}')" onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')">
+          <div class="kanban-card" draggable="true" data-doc="${escapeHtml(r[2])}" ondragstart="dragKanban(event, '${escapeHtml(r[2])}')">
             <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${escapeHtml(r[3])} ${escapeHtml(r[4])}</div>
             <div style="font-size:10px; color:var(--ink-soft);">DNI: ${escapeHtml(r[2])} | Tel: ${escapeHtml(r[8])}</div>
             <div style="font-size:10px; margin-top:4px;">📍 ${escapeHtml(r[5] || 'Sin dir')}</div>
@@ -1788,11 +1836,20 @@
           </div>
         `;
 
-        if(est === 'NUEVO') colNuevos.innerHTML += cardHTML;
-        else if(est === 'CONTACTADO') colContactados.innerHTML += cardHTML;
-        else if(est === 'VENDIDO') colVendidos.innerHTML += cardHTML;
-        else if(est === 'DESCARTADO') colDescartados.innerHTML += cardHTML;
-        else colNuevos.innerHTML += cardHTML;
+        if(est === 'NUEVO') htmlNuevos += cardHTML;
+        else if(est === 'CONTACTADO') htmlContactados += cardHTML;
+        else if(est === 'VENDIDO') htmlVendidos += cardHTML;
+        else if(est === 'DESCARTADO') htmlDescartados += cardHTML;
+        else htmlNuevos += cardHTML;
+      });
+
+      colNuevos.innerHTML = htmlNuevos;
+      colContactados.innerHTML = htmlContactados;
+      colVendidos.innerHTML = htmlVendidos;
+      colDescartados.innerHTML = htmlDescartados;
+
+      document.querySelectorAll('.kanban-card').forEach(card => {
+        card.onclick = () => verDetalleAgendaPorDoc(card.dataset.doc);
       });
     }
 
@@ -1819,7 +1876,7 @@
             <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
               <label style="display:block; margin-bottom: 4px; color: var(--ink-soft);">REASIGNAR A OTRO VENDEDOR:</label>
               <select id="agNuevoVendedor" style="width: 100%; padding: 4px; background: #1a1a1a; color: #fff; border: 1px solid #555;">${optionsVend}</select>
-              <button onclick="reasignarContactoLead('${escapeHtml(r[2])}')" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
+              <button id="btnReasigLead" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
             </div>
           ` : ''}
 
@@ -1862,14 +1919,24 @@
           </div>
 
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button onclick="convertirEnVenta('${escapeHtml(r[2])}')" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
-            <button onclick="guardarSeguimientoAgenda('${escapeHtml(r[2])}')" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
-            <button onclick="cerrarModales()" class="nb-btn" style="background: #444;">Cerrar</button>
+            <button id="btnConvVenta" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
+            <button id="btnGuardiSeg" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
+            <button class="btn-cerrar-modal nb-btn" style="background: #444;">Cerrar</button>
           </div>
         </div>
       `;
-      document.getElementById('contenidoDetalleAgenda').innerHTML = html;
+
+      const modalContainer = document.getElementById('contenidoDetalleAgenda');
+      modalContainer.innerHTML = html;
       document.getElementById('modalDetalleAgenda').style.display = 'flex';
+
+      modalContainer.querySelectorAll('.btn-cerrar-modal').forEach(b => b.onclick = cerrarModales);
+      const btnReas = document.getElementById('btnReasigLead');
+      if(btnReas) btnReas.onclick = () => reasignarContactoLead(r[2]);
+      const btnConv = document.getElementById('btnConvVenta');
+      if(btnConv) btnConv.onclick = () => convertirEnVenta(r[2]);
+      const btnSeg = document.getElementById('btnGuardiSeg');
+      if(btnSeg) btnSeg.onclick = () => guardarSeguimientoAgenda(r[2]);
     }
 
     function dragKanban(event, dni) {
