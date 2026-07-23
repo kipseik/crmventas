@@ -1165,20 +1165,20 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // VISUALIZACIÓN COMPLETA DE TODOS LOS DATOS CARGADOS EN EL MODAL DE DETALLE DE VENTA
+    // VISUALIZACIÓN COMPLETA DE TODOS LOS DATOS Y REGLA DE ESTADOS POR ROL
     function verDetalleVenta(idx) {
       const r = todasLasVentas[idx];
       let est = r[8] || ESTADOS_VENTA.PENDIENTE;
+      let estUpper = est.toUpperCase();
       let nroOrdenActual = r[22] || '';
       let agenteProvActual = r[23] || '';
       let vendedorActual = r[6] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
       let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
 
-      // REGLA DE ESTADOS SEGÚN ROL:
-      // Si el usuario es Vendedor: solo puede ver PENDIENTE o CANCELADA. 
-      // Si ya está CANCELADA, se bloquea y solo Admin/TL la puede cambiar.
       let optionsEstadoHTML = '';
+      let isEstadoDisabled = '';
+
       if (esAdminTL) {
         optionsEstadoHTML = `
           <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
@@ -1188,8 +1188,9 @@
         `;
       } else {
         // Vendedor
-        if (est.toUpperCase() === 'CANCELADA') {
-          optionsEstadoHTML = `<option value="CANCELADA" selected>CANCELADA (Bloqueado para Vendedor)</option>`;
+        if (estUpper === 'CANCELADA') {
+          optionsEstadoHTML = `<option value="CANCELADA" selected>CANCELADA (Bloqueado)</option>`;
+          isEstadoDisabled = 'disabled';
         } else {
           optionsEstadoHTML = `
             <option value="${ESTADOS_VENTA.PENDIENTE}" ${est===ESTADOS_VENTA.PENDIENTE?'selected':''}>PENDIENTE</option>
@@ -1214,8 +1215,6 @@
           </div>
         `;
       }
-
-      let isEstadoDisabled = (!esAdminTL && est.toUpperCase() === 'CANCELADA') ? 'disabled' : '';
 
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
@@ -1244,7 +1243,7 @@
           </div>
 
           <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
-            <!-- GRILLA COMPLETA DE DATOS CARGADOS -->
+            <!-- GRILLA COMPLETA DE TODOS LOS DATOS CARGADOS -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>FECHA:</b> ${r[0] || '-'}</div>
               <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
