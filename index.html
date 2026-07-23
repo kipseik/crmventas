@@ -207,7 +207,7 @@
               </div>
               <button onclick="filtrarLlamadosHoy()" id="btnFiltroHoy" class="nb-btn nb-btn-sm" style="background: #f59e0b; color: #000; font-weight: bold;">🔔 Llamados de Hoy</button>
               <button onclick="filtrarLeadsEnFrio()" class="nb-btn nb-btn-sm" style="background: rgba(239,68,68,0.2); color: #fca5a5; font-weight: bold;">⚠️ Leads en Frío</button>
-              <button onclick="cargarAgenda()" class="nb-btn nb-btn-sm">Ver Todos</button>
+              <button onclick="cargarAgenda(true)" class="nb-btn nb-btn-sm">Actualizar</button>
               <button onclick="abrirModalAgenda()" class="nb-btn nb-btn-primary nb-btn-sm">+ Agregar Contacto</button>
               <button onclick="abrirModalImportarLote()" id="btnImportarLote" class="nb-btn nb-btn-primary nb-btn-sm" style="background: #0f766e; display:none;">📥 Importación Masiva (Teléfonos)</button>
             </div>
@@ -741,6 +741,12 @@
     let isProcessingToast = false;
     let searchDebounceTimer = null;
 
+    // CACHÉ EN MEMORIA PARA NAVEGACIÓN INSTANTÁNEA (FLUIDEZ MÁXIMA)
+    let cacheLocal = {
+      ventasUltimaCarga: 0,
+      agendaUltimaCarga: 0
+    };
+
     const Storage = {
       get(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
       set(key, val) { try { localStorage.setItem(key, val); } catch(e) {} },
@@ -853,6 +859,8 @@
 
       if (!usuarioActual) { cerrarSesion(); return; }
 
+      // SALUDO DE BIENVIENIDA PERSONALIZADO AL INGRESAR
+      showToast(`¡Bienvenido, ${usuarioActual.nombre}! (${usuarioActual.rol})`, 'info');
       setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
 
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
@@ -890,9 +898,16 @@
       document.getElementById(sectionId).style.display = 'block';
       document.querySelectorAll('.nb-nav-link').forEach(link => link.classList.remove('active'));
       if(element) element.classList.add('active');
+      
+      // Navegación instantánea usando caché en memoria
       if(sectionId === 'sec-reportes') cargarReportes();
       if(sectionId === 'sec-usuarios') cargarUsuarios();
-      if(sectionId === 'sec-agenda') cargarAgenda();
+      if(sectionId === 'sec-agenda') {
+        const ahora = new Date().getTime();
+        if (agendaGlobal.length === 0 || (ahora - cacheLocal.agendaUltimaCarga > 45000)) {
+          cargarAgenda();
+        }
+      }
       if(sectionId === 'sec-config') cargarTablaConfigCampanas();
     }
 
@@ -1040,11 +1055,19 @@
       } catch(e) {}
     }
 
-    async function cargarVentas() {
+    async function cargarVentas(forzar = false) {
+      const ahora = new Date().getTime();
+      if (!forzar && todasLasVentas.length > 0 && (ahora - cacheLocal.ventasUltimaCarga < 30000)) {
+        aplicarFiltrosAvanzados();
+        actualizarKPIsPersonales();
+        return;
+      }
+
       try {
         const data = await apiFetch({ action: 'getVentas', userEmail: usuarioActual.email });
         if(data.success) {
           todasLasVentas = data.rows;
+          cacheLocal.ventasUltimaCarga = new Date().getTime();
           aplicarFiltrosAvanzados();
           actualizarKPIsPersonales();
         } else { showError(data.error); }
@@ -1108,7 +1131,6 @@
         return;
       }
       tbody.innerHTML = data.map((r) => {
-        let globalIdx = todasLasVentas.indexOf(r);
         let est = r[8] || ESTADOS_VENTA.PENDIENTE;
         let bClass = "nb-badge-blue";
         if(est === ESTADOS_VENTA.CUMPLIDA) bClass = "nb-badge-green";
@@ -1198,7 +1220,6 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // BÚSQUEDA POR DNI ROBUSTA PARA DETALLE DE VENTA
     function verDetalleVentaPorDoc(doc) {
       const r = todasLasVentas.find(item => item[3].toString().trim() === doc.toString().trim());
       if (!r) {
@@ -1325,21 +1346,40 @@
     }
 
     async function actualizarEstadoSolo(doc) {
-      enviarAccionServidor(doc, document.getElementById('detalleNuevoEstado').value, null, null, null);
+      const nuevoEst = document.getElementById('detalleNuevoEstado').value;
+      // Optimistic UI local update
+      const index = todasLasVentas.findIndex(item => item[3].toString().trim() === doc.toString().trim());
+      if (index !== -1) {
+        todasLasVentas[index][8] = nuevoEst;
+        aplicarFiltrosAvanzados();
+      }
+      enviarAccionServidor(doc, nuevoEst, null, null, null);
     }
+
     async function actualizarObs(doc) {
       enviarAccionServidor(doc, null, document.getElementById('detalleObs').value, null, null);
     }
+
     async function guardarCambiosVentaAdminTL(doc) {
       const nuevoEst = document.getElementById('detalleNuevoEstado').value;
       const nuevoOrden = document.getElementById('detalleNroOrden').value;
       const nuevoAgenteProv = document.getElementById('detalleAgenteProveedor').value.trim();
       const nuevoVend = document.getElementById('detalleNuevoVendedor').value;
 
+      // Optimistic update local
+      const index = todasLasVentas.findIndex(item => item[3].toString().trim() === doc.toString().trim());
+      if (index !== -1) {
+        todasLasVentas[index][8] = nuevoEst;
+        todasLasVentas[index][6] = nuevoVend;
+        todasLasVentas[index][22] = nuevoOrden;
+        todasLasVentas[index][23] = nuevoAgenteProv;
+        aplicarFiltrosAvanzados();
+      }
+
       await enviarAccionServidor(doc, nuevoEst, null, nuevoOrden, nuevoAgenteProv);
       try {
         const data = await apiFetch({ action: 'cambiarVendedorVenta', doc: doc, nuevoVendedor: nuevoVend, admin: usuarioActual.email });
-        if(data.success) { showToast("Venta y vendedor actualizados"); cargarVentas(); }
+        if(data.success) { showToast("Venta y vendedor actualizados"); cargarVentas(true); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al reasignar vendedor', 'error'); }
     }
@@ -1347,9 +1387,17 @@
     async function enviarAccionServidor(doc, estado, obs, nroOrden, agenteProveedor) {
       try {
         const data = await apiFetch({ action: 'procesarAccion', doc: doc, nuevoEstado: estado, obs: obs, nroOrden: nroOrden, agenteProveedor: agenteProveedor, admin: usuarioActual.email });
-        if(data.success) { showToast("Actualizado correctamente"); cargarVentas(); }
-        else { showToast(data.error, 'error'); }
-      } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        if(data.success) { 
+          showToast("Actualizado correctamente"); 
+          cargarVentas(true); 
+        } else { 
+          showToast(data.error, 'error'); 
+          cargarVentas(true); // Revertir si hubo error en backend
+        }
+      } catch(e) { 
+        showToast('Error: ' + e.message, 'error'); 
+        cargarVentas(true);
+      }
     }
 
     async function guardarNuevaVenta() {
@@ -1425,8 +1473,8 @@
             showToast(result.msg);
             cerrarModales();
             leadConvertiendoDoc = null;
-            cargarVentas();
-            cargarAgenda();
+            cargarVentas(true);
+            cargarAgenda(true);
 
             if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
               mostrarAlertaNuevaVenta(datos, usuarioActual.nombre);
@@ -1487,8 +1535,16 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA, KANBAN Y VISTA CALENDARIO CLÁSICO CON NÚMEROS NEGROS Y SELECCIÓN AZUL
-    async function cargarAgenda() {
+    // GESTIÓN DE AGENDA Y CALENDARIO INTERACTIVO
+    async function cargarAgenda(forzar = false) {
+      const ahora = new Date().getTime();
+      if (!forzar && agendaGlobal.length > 0 && (ahora - cacheLocal.agendaUltimaCarga < 30000)) {
+        renderAgenda(agendaGlobal);
+        renderKanban(agendaGlobal);
+        if(vistaActualAgenda === 'calendario') renderizarVistaCalendario();
+        return;
+      }
+
       const tbody = document.getElementById('tablaAgenda');
       if (tbody && !agendaGlobal.length) {
         tbody.innerHTML = "<tr><td colspan='9'><div class='loader'></div></td></tr>";
@@ -1498,6 +1554,7 @@
         const data = await apiFetch({ action: 'getAgenda', userEmail: usuarioActual.email });
         if(data.success) {
           agendaGlobal = data.rows || [];
+          cacheLocal.agendaUltimaCarga = new Date().getTime();
           renderAgenda(agendaGlobal);
           renderKanban(agendaGlobal);
           if(vistaActualAgenda === 'calendario') renderizarVistaCalendario();
@@ -1592,10 +1649,10 @@
         celda.style.fontWeight = 'bold';
         celda.style.border = '1px solid #ccc';
         celda.style.background = '#fff';
-        celda.style.color = '#000'; // Números en negro
+        celda.style.color = '#000'; // Todos los números en negro
 
         if (fechaIsoStr === fechaSeleccionadaCal) {
-          celda.style.background = '#3b82f6'; // Se tilda de azul el día seleccionado / de hoy
+          celda.style.background = '#3b82f6'; // Selección azul
           celda.style.color = '#fff';
           celda.style.borderColor = '#1d4ed8';
         }
@@ -1608,7 +1665,6 @@
         grid.appendChild(celda);
       }
 
-      // Filtrar métricas y horarios para la fecha seleccionada
       const ventasDelDia = todasLasVentas.filter(r => {
         let iso = parseFechaVenta(r[0] ? r[0].toString() : '');
         return iso === fechaSeleccionadaCal;
@@ -1759,7 +1815,6 @@
       });
     }
 
-    // BÚSQUEDA ROBUSTA POR DNI PARA EL DETALLE DE AGENDA (EVITA ERRORES DE ÍNDICE)
     function verDetalleAgendaPorDoc(doc) {
       const r = agendaGlobal.find(item => item[2].toString().trim() === doc.toString().trim());
       if (!r) {
@@ -1871,7 +1926,7 @@
         });
         if(data.success) {
           showToast(`Estado actualizado a ${nuevoEstado}`);
-          cargarAgenda();
+          cargarAgenda(true);
         } else {
           showToast(data.error, 'error');
         }
@@ -1928,7 +1983,7 @@
         if(data.success) {
           showToast(data.msg);
           document.getElementById('checkTodos').checked = false;
-          cargarAgenda();
+          cargarAgenda(true);
         } else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error en asignación masiva', 'error'); }
     }
@@ -1959,7 +2014,7 @@
         if(data.success) {
           showToast(data.msg);
           cerrarModales();
-          cargarAgenda();
+          cargarAgenda(true);
         } else {
           showToast(data.error, 'error');
         }
@@ -2002,7 +2057,7 @@
 
       try {
         const data = await apiFetch({ action: 'guardarAgenda', userEmail: usuarioActual.email, data: d });
-        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
+        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(true); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al guardar contacto', 'error'); }
     }
@@ -2043,7 +2098,7 @@
 
       try {
         const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: nuevoEst, motivoDescarte: motivoDesc, coordsDescarte: coordsInput, comentarios: comentario, nuevoVendedor: null, fechaRec: nuevaRec, admin: usuarioActual.email });
-        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(); }
+        if(data.success) { showToast(data.msg); cerrarModales(); cargarAgenda(true); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al actualizar', 'error'); }
     }
@@ -2053,7 +2108,7 @@
       if (!confirm(`¿Confirmar reasignación a ${nuevoVend}?`)) return;
       try {
         const data = await apiFetch({ action: 'actualizarAgenda', doc: doc, estado: null, motivoDescarte: null, coordsDescarte: null, comentarios: `Reasignado a ${nuevoVend}`, nuevoVendedor: nuevoVend, fechaRec: null, admin: usuarioActual.email });
-        if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(); }
+        if(data.success) { showToast('Contacto reasignado exitosamente'); cerrarModales(); cargarAgenda(true); }
         else { showToast(data.error, 'error'); }
       } catch(e) { showToast('Error al reasignar', 'error'); }
     }
