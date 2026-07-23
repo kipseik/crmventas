@@ -257,7 +257,7 @@
           </div>
         </div>
 
-        <!-- CONTENEDOR VISTA CALENDARIO CLÁSICO CON NÚMEROS NEGROS Y SELECCIÓN AZUL -->
+        <!-- CONTENEDOR VISTA CALENDARIO -->
         <div id="contenedorVistaCalendario" class="nb-window" style="display: none; background: #f4f4f4; color: #000; padding: 16px; border-radius: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <button onclick="cambiarMesCalendario(-1)" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">◀ Mes Anterior</button>
@@ -317,7 +317,7 @@
         </div>
       </div>
 
-      <!-- SECCIÓN REPORTES ESTILO CLÁSICO DETALLADO -->
+      <!-- SECCIÓN REPORTES CON DESGLOSE POR EQUIPO Y VENDEDOR -->
       <div id="sec-reportes" class="page-section" style="display: none;">
         <div class="nb-window">
           <div class="nb-titlebar"><span class="nb-dot green"></span>Filtros de Reporte</div>
@@ -430,14 +430,15 @@
 
         </div>
 
-        <!-- RANKING POR VENDEDOR -->
-        <div class="nb-window">
-          <div class="nb-titlebar" style="background: #1e40af; color: white;">🏆 RANKING POR VENDEDOR</div>
+        <!-- REPORTES POR EQUIPO (TEAM LEADER) -->
+        <div class="nb-window" style="margin-bottom: 16px;">
+          <div class="nb-titlebar" style="background: #0f766e; color: white;">👥 VENTAS POR EQUIPO (TEAM LEADER)</div>
           <div style="overflow-x: auto;">
             <table class="nb-table">
               <thead>
                 <tr>
-                  <th>VENDEDOR</th>
+                  <th>EQUIPO / TEAM LEADER</th>
+                  <th>TOTAL INGRESADAS</th>
                   <th>CUMPLIDAS</th>
                   <th>FIBRA</th>
                   <th>PORTA</th>
@@ -448,7 +449,32 @@
                   <th>TV</th>
                 </tr>
               </thead>
-              <tbody id="tablaRanking"><tr><td colspan="9" style="text-align:center;"><div class="loader"></div></td></tr></tbody>
+              <tbody id="tablaReporteEquipo"><tr><td colspan="10" style="text-align:center;"><div class="loader"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RANKING / VENTAS POR VENDEDOR -->
+        <div class="nb-window">
+          <div class="nb-titlebar" style="background: #1e40af; color: white;">🏆 VENTAS / RANKING POR VENDEDOR</div>
+          <div style="overflow-x: auto;">
+            <table class="nb-table">
+              <thead>
+                <tr>
+                  <th>VENDEDOR</th>
+                  <th>EQUIPO</th>
+                  <th>TOTAL INGRESADAS</th>
+                  <th>CUMPLIDAS</th>
+                  <th>FIBRA</th>
+                  <th>PORTA</th>
+                  <th>MÓVIL</th>
+                  <th>CANCELADAS</th>
+                  <th>CASH</th>
+                  <th>CLUSTER C</th>
+                  <th>TV</th>
+                </tr>
+              </thead>
+              <tbody id="tablaRanking"><tr><td colspan="11" style="text-align:center;"><div class="loader"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -741,7 +767,6 @@
     let isProcessingToast = false;
     let searchDebounceTimer = null;
 
-    // CACHÉ EN MEMORIA PARA NAVEGACIÓN INSTANTÁNEA (FLUIDEZ MÁXIMA)
     let cacheLocal = {
       ventasUltimaCarga: 0,
       agendaUltimaCarga: 0
@@ -757,6 +782,16 @@
     function setText(id, val) {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function showToast(msg, type = 'info') {
@@ -807,8 +842,8 @@
         try {
           return JSON.parse(text);
         } catch (jsonErr) {
-          console.error("Respuesta del servidor no válida (HTML o Texto):", text);
-          throw new Error("El servidor devolvió una respuesta no válida. Verificá que el Web App esté configurado como 'Cualquier usuario'.");
+          console.error("Respuesta del servidor no válida:", text);
+          throw new Error("El servidor devolvió una respuesta no válida. Verificá los permisos del Web App.");
         }
       } catch (e) {
         clearTimeout(timeoutId);
@@ -831,7 +866,7 @@
         const data = await apiFetch({ action: 'loginUsuario', email: email, pass: pass });
         if(data.success) {
           usuarioActual = data.user;
-          Storage.set('paces_user', JSON.stringify(usuarioActual));
+          Storage.set('xeneizes_user', JSON.stringify(usuarioActual));
           mostrarApp();
         } else { 
           setText('loginError', data.error || 'Credenciales incorrectas'); 
@@ -844,7 +879,7 @@
     }
 
     function cerrarSesion() { 
-      Storage.remove('paces_user');
+      Storage.remove('xeneizes_user');
       location.reload(); 
     }
 
@@ -852,14 +887,13 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'block';
       
-      const userStr = Storage.get('paces_user');
+      const userStr = Storage.get('xeneizes_user');
       try {
         usuarioActual = userStr ? JSON.parse(userStr) : null;
       } catch(e) { usuarioActual = null; }
 
       if (!usuarioActual) { cerrarSesion(); return; }
 
-      // SALUDO DE BIENVIENIDA PERSONALIZADO AL INGRESAR
       showToast(`¡Bienvenido, ${usuarioActual.nombre}! (${usuarioActual.rol})`, 'info');
       setText('userInfo', `${usuarioActual.nombre} | ${usuarioActual.rol}`);
 
@@ -899,7 +933,6 @@
       document.querySelectorAll('.nb-nav-link').forEach(link => link.classList.remove('active'));
       if(element) element.classList.add('active');
       
-      // Navegación instantánea usando caché en memoria
       if(sectionId === 'sec-reportes') cargarReportes();
       if(sectionId === 'sec-usuarios') cargarUsuarios();
       if(sectionId === 'sec-agenda') {
@@ -912,6 +945,7 @@
     }
 
     function cerrarModales() {
+      leadConvertiendoDoc = null;
       ['modalVenta', 'modalUsuario', 'modalDetalleVenta', 'modalAgenda', 'modalDetalleAgenda', 'modalImportarLote', 'modalAlertaVenta'].forEach(id => {
         const m = document.getElementById(id);
         if(m) m.style.display = 'none';
@@ -933,22 +967,22 @@
 
       const filtroCamp = document.getElementById('filtroCamp');
       if(filtroCamp) {
-        filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => `<option>${c}</option>`).join('');
+        filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
       }
 
       const vCamp = document.getElementById('vCampaña');
       if(vCamp) {
-        vCamp.innerHTML = '<option>-- Seleccionar --</option>' + campanas.map(c => `<option>${c}</option>`).join('');
+        vCamp.innerHTML = '<option>-- Seleccionar --</option>' + campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
       }
 
       const agCamp = document.getElementById('agCamp');
       if(agCamp) {
-        agCamp.innerHTML = campanas.map(c => `<option>${c}</option>`).join('');
+        agCamp.innerHTML = campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
       }
 
       const loteCamp = document.getElementById('loteCamp');
       if(loteCamp) {
-        loteCamp.innerHTML = campanas.map(c => `<option>${c}</option>`).join('');
+        loteCamp.innerHTML = campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
       }
     }
 
@@ -959,7 +993,7 @@
 
       if(configuracionCampanasGlobal[campaña]?.length) {
         configuracionCampanasGlobal[campaña].forEach(p => {
-          selectProd.innerHTML += `<option>${p}</option>`;
+          selectProd.innerHTML += `<option>${escapeHtml(p)}</option>`;
         });
       }
     }
@@ -974,10 +1008,10 @@
           data.rawRows.forEach(r => {
             let companiaVal = r[2] || '-';
             rowsHTML += `<tr>
-              <td><strong>${r[0]}</strong></td>
-              <td>${r[1]}</td>
-              <td><span class="nb-badge nb-badge-blue">${companiaVal}</span></td>
-              <td><button onclick="eliminarCampanaProducto('${r[0]}', '${r[1]}', '${companiaVal}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
+              <td><strong>${escapeHtml(r[0])}</strong></td>
+              <td>${escapeHtml(r[1])}</td>
+              <td><span class="nb-badge nb-badge-blue">${escapeHtml(companiaVal)}</span></td>
+              <td><button onclick="eliminarCampanaProducto('${escapeHtml(r[0])}', '${escapeHtml(r[1])}', '${escapeHtml(companiaVal)}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
             </tr>`;
           });
           tbody.innerHTML = rowsHTML || "<tr><td colspan='4' style='text-align:center;'>Sin campañas configuradas</td></tr>";
@@ -1045,11 +1079,11 @@
 
           const loteSel = document.getElementById('loteNuevoVendedor');
           if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
-            loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+            loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
           }
           const loteImportSel = document.getElementById('loteDestinoVendedor');
           if(loteImportSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
-            loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+            loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
           }
         }
       } catch(e) {}
@@ -1137,18 +1171,18 @@
         else if(est.includes(ESTADOS_VENTA.CANCELADA) || est.includes(ESTADOS_VENTA.RECUPERAR)) bClass = "nb-badge-red";
         else if(est === ESTADOS_VENTA.PENDIENTE) bClass = "nb-badge-yellow";
 
-        let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${r[11]}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${escapeHtml(r[11])}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
         let nroOrdenVal = r[22] || '-';
 
-        return `<tr onclick="verDetalleVentaPorDoc('${r[3]}')">
-          <td data-label="Fecha">${r[0] || ''}</td>
-          <td data-label="Campaña">${r[1] || ''} (${r[2] || 'Individuos'})</td>
-          <td data-label="Nro Orden"><strong>${nroOrdenVal}</strong></td>
-          <td data-label="Documento">${r[3] || ''}</td>
-          <td data-label="Nombre">${r[4] || ''} ${r[5] || ''}</td>
-          <td data-label="Vendedor">${r[6] || ''}</td>
-          <td data-label="Producto">${r[7] || ''}</td>
-          <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
+        return `<tr onclick="verDetalleVentaPorDoc('${escapeHtml(r[3])}')">
+          <td data-label="Fecha">${escapeHtml(r[0] || '')}</td>
+          <td data-label="Campaña">${escapeHtml(r[1] || '')} (${escapeHtml(r[2] || 'Individuos'})</td>
+          <td data-label="Nro Orden"><strong>${escapeHtml(nroOrdenVal)}</strong></td>
+          <td data-label="Documento">${escapeHtml(r[3] || '')}</td>
+          <td data-label="Nombre">${escapeHtml(r[4] || '')} ${escapeHtml(r[5] || '')}</td>
+          <td data-label="Vendedor">${escapeHtml(r[6] || '')}</td>
+          <td data-label="Producto">${escapeHtml(r[7] || '')}</td>
+          <td data-label="Estado"><span class="nb-badge ${bClass}">${escapeHtml(est)}</span></td>
           <td data-label="Adjuntos">${adjHTML}</td>
         </tr>`;
       }).join('');
@@ -1174,52 +1208,6 @@
       verificarDuplicadoDNI();
     }
 
-    function descargarExcel(tipo) {
-      let datosParaExportar = todasLasVentas;
-      if(tipo === 'mias') {
-        datosParaExportar = todasLasVentas.filter(r => safeLower(r[6]) === safeLower(usuarioActual.nombre) || safeLower(r[6]) === safeLower(usuarioActual.email));
-      }
-      if(!datosParaExportar || datosParaExportar.length === 0) {
-        showToast('No hay ventas para descargar', 'error'); return;
-      }
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Fecha,Campaña,Segmento,Documento,Nombre,Apellido,Vendedor,Producto,Estado,NroOrden,AgenteProveedor\r\n";
-      datosParaExportar.forEach(r => {
-        let fila = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[22] || '', r[23] || ''].map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",");
-        csvContent += fila + "\r\n";
-      });
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `ventas_xeneizes_${tipo}_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
-    function descargarExcelRanking() {
-      const tbody = document.getElementById('tablaRanking');
-      if(!tbody || tbody.innerText.includes("Sin datos")) {
-        showToast('No hay datos en el ranking para exportar', 'error');
-        return;
-      }
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Vendedor,Cumplidas,Fibra,Porta,Movil,Canceladas,Cash,ClusterC,TV\r\n";
-      
-      const rows = tbody.querySelectorAll('tr');
-      rows.forEach(tr => {
-        const cols = tr.querySelectorAll('td');
-        if(cols.length >= 9) {
-          let dataRow = Array.from(cols).map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(",");
-          csvContent += dataRow + "\r\n";
-        }
-      });
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `ranking_vendedores_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
     function verDetalleVentaPorDoc(doc) {
       const r = todasLasVentas.find(item => item[3].toString().trim() === doc.toString().trim());
       if (!r) {
@@ -1233,7 +1221,7 @@
       let agenteProvActual = r[23] || '';
       let vendedorActual = r[6] || '';
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
-      let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${v}</option>`).join('');
+      let optionsVendedores = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}" ${v.toLowerCase()===vendedorActual.toLowerCase()?'selected':''}>${escapeHtml(v)}</option>`).join('');
 
       let optionsEstadoHTML = '';
       let isReadonly = '';
@@ -1248,7 +1236,7 @@
       } else {
         if (estUpper !== 'A RECUPERAR') {
           isReadonly = 'disabled';
-          optionsEstadoHTML = `<option value="${est}" selected>${est} (Solo lectura para Vendedor)</option>`;
+          optionsEstadoHTML = `<option value="${escapeHtml(est)}" selected>${escapeHtml(est)} (Solo lectura para Vendedor)</option>`;
         } else {
           optionsEstadoHTML = `
             <option value="${ESTADOS_VENTA.PENDIENTE}">PENDIENTE</option>
@@ -1268,8 +1256,8 @@
         }
         previsualizadorHTML = `
           <div style="margin-top: 6px;">
-            <a href="${linkAdjunto}" target="_blank" style="color:#3b82f6; font-weight:bold; display:block; margin-bottom:6px;">🔗 Abrir enlace en pestaña nueva</a>
-            <iframe src="${previewUrl}" width="100%" height="200px" style="border:1px solid #7f9db9; background:#fff;"></iframe>
+            <a href="${escapeHtml(linkAdjunto)}" target="_blank" style="color:#3b82f6; font-weight:bold; display:block; margin-bottom:6px;">🔗 Abrir enlace en pestaña nueva</a>
+            <iframe src="${escapeHtml(previewUrl)}" width="100%" height="200px" style="border:1px solid #7f9db9; background:#fff;"></iframe>
           </div>
         `;
       }
@@ -1277,7 +1265,7 @@
       const html = `
         <div style="background: #c0c0c0; color: #000; border: 2px solid #fff; border-right-color: #000; border-bottom-color: #000; font-family: 'MS Sans Serif', Arial, sans-serif; box-shadow: 4px 4px 10px rgba(0,0,0,0.7);">
           <div style="background: linear-gradient(to right, #000080, #1084d0); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 12px;">
-            <span>○ Detalle Venta — ${r[4] || ''} ${r[5] || ''} (DNI: ${r[3] || ''})</span>
+            <span>○ Detalle Venta — ${escapeHtml(r[4] || '')} ${escapeHtml(r[5] || '')} (DNI: ${escapeHtml(r[3] || '')})</span>
             <button onclick="cerrarModales()" style="background: #c0c0c0; border: 1px solid #000; color: #000; cursor: pointer; font-size: 12px; width: 18px; height: 16px; line-height: 1; font-weight: bold;">×</button>
           </div>
 
@@ -1289,39 +1277,39 @@
 
             ${esAdminTL ? `
               <span style="font-size: 11px; font-weight: bold;">NRO ORDEN:</span>
-              <input type="text" id="detalleNroOrden" value="${nroOrdenActual}" style="width: 80px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <input type="text" id="detalleNroOrden" value="${escapeHtml(nroOrdenActual)}" style="width: 80px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <span style="font-size: 11px; font-weight: bold;">AGENTE / PROV:</span>
-              <input type="text" id="detalleAgenteProveedor" value="${agenteProvActual}" placeholder="Ej: Damatec" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
+              <input type="text" id="detalleAgenteProveedor" value="${escapeHtml(agenteProvActual)}" placeholder="Ej: Damatec" style="width: 100px; padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">
               <span style="font-size: 11px; font-weight: bold;">VENDEDOR:</span>
               <select id="detalleNuevoVendedor" style="padding: 3px; font-size: 11px; background: #fff; border: 1px solid #7f9db9;">${optionsVendedores}</select>
-              <button onclick="guardarCambiosVentaAdminTL('${r[3]}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
+              <button onclick="guardarCambiosVentaAdminTL('${escapeHtml(r[3])}')" style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070; font-weight: bold;">Guardar Todo</button>
             ` : `
-              <button onclick="actualizarEstadoSolo('${r[3]}')" ${isReadonly} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
+              <button onclick="actualizarEstadoSolo('${escapeHtml(r[3])}')" ${isReadonly} style="padding: 3px 10px; font-size: 11px; cursor: pointer; background: #e1e1e1; border: 1px solid #707070;">Guardar Estado</button>
             `}
           </div>
 
           <div style="padding: 12px; max-height: 70vh; overflow-y: auto; background: #ece9d8; font-size: 11px;">
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>FECHA:</b> ${r[0] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CAMPAÑA:</b> ${r[1] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>SEGMENTO:</b> ${r[2] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>DNI / DOC:</b> ${r[3] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>NOMBRE:</b> ${r[4] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>APELLIDO:</b> ${r[5] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>VENDEDOR:</b> ${r[6] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PRODUCTO:</b> ${r[7] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>F. NACIMIENTO:</b> ${r[12] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TITULAR:</b> ${r[13] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. ALT:</b> ${r[14] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TOTALIZAR:</b> ${r[15] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>MAIL:</b> ${r[16] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PROVINCIA:</b> ${r[17] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LOCALIDAD:</b> ${r[18] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LEAD:</b> ${r[19] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CLUSTER:</b> ${r[24] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CASH:</b> ${r[25] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TV:</b> ${r[26] || '-'}</div>
-              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px; grid-column: span 2;"><b>PAGO / TARJETA:</b> ${r[21] || 'EFECTIVO'}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>FECHA:</b> ${escapeHtml(r[0] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CAMPAÑA:</b> ${escapeHtml(r[1] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>SEGMENTO:</b> ${escapeHtml(r[2] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>DNI / DOC:</b> ${escapeHtml(r[3] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>NOMBRE:</b> ${escapeHtml(r[4] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>APELLIDO:</b> ${escapeHtml(r[5] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>VENDEDOR:</b> ${escapeHtml(r[6] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PRODUCTO:</b> ${escapeHtml(r[7] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>F. NACIMIENTO:</b> ${escapeHtml(r[12] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TITULAR:</b> ${escapeHtml(r[13] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. ALT:</b> ${escapeHtml(r[14] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TEL. TOTALIZAR:</b> ${escapeHtml(r[15] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>MAIL:</b> ${escapeHtml(r[16] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>PROVINCIA:</b> ${escapeHtml(r[17] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LOCALIDAD:</b> ${escapeHtml(r[18] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>LEAD:</b> ${escapeHtml(r[19] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CLUSTER:</b> ${escapeHtml(r[24] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>CASH:</b> ${escapeHtml(r[25] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px;"><b>TV:</b> ${escapeHtml(r[26] || '-')}</div>
+              <div style="border: 1px solid #999; background: #f4f3ee; padding: 5px; grid-column: span 2;"><b>PAGO / TARJETA:</b> ${escapeHtml(r[21] || 'EFECTIVO')}</div>
             </div>
 
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
@@ -1332,8 +1320,8 @@
             <div style="margin-top: 10px; border: 1px solid #999; background: #f4f3ee; padding: 8px;">
               <b>HISTORIAL Y OBSERVACIONES:</b>
               <textarea id="detalleObs" ${isReadonly} style="width: 100%; height: 50px; font-size: 11px; margin-top: 4px; border: 1px solid #7f9db9;" placeholder="Escribe tu observación..."></textarea>
-              ${(!isReadonly) ? `<button onclick="actualizarObs('${r[3]}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>` : ''}
-              <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${r[20] || 'Sin notas'}</pre>
+              ${(!isReadonly) ? `<button onclick="actualizarObs('${escapeHtml(r[3])}')" style="margin-top: 4px; padding: 3px 8px; font-size: 11px; background: #e1e1e1; border: 1px solid #707070;">Agregar Observación con Registro</button>` : ''}
+              <pre style="white-space: pre-wrap; font-family: monospace; font-size: 10px; color: #333; margin-top: 6px; background: #fff; padding: 4px; border: 1px inset #ccc; max-height: 100px; overflow-y: auto;">${escapeHtml(r[20] || 'Sin notas')}</pre>
             </div>
           </div>
           <div style="padding: 8px 12px; display: flex; justify-content: flex-end; background: #d4d0c8; border-top: 1px solid #fff;">
@@ -1347,7 +1335,6 @@
 
     async function actualizarEstadoSolo(doc) {
       const nuevoEst = document.getElementById('detalleNuevoEstado').value;
-      // Optimistic UI local update
       const index = todasLasVentas.findIndex(item => item[3].toString().trim() === doc.toString().trim());
       if (index !== -1) {
         todasLasVentas[index][8] = nuevoEst;
@@ -1366,7 +1353,6 @@
       const nuevoAgenteProv = document.getElementById('detalleAgenteProveedor').value.trim();
       const nuevoVend = document.getElementById('detalleNuevoVendedor').value;
 
-      // Optimistic update local
       const index = todasLasVentas.findIndex(item => item[3].toString().trim() === doc.toString().trim());
       if (index !== -1) {
         todasLasVentas[index][8] = nuevoEst;
@@ -1392,7 +1378,7 @@
           cargarVentas(true); 
         } else { 
           showToast(data.error, 'error'); 
-          cargarVentas(true); // Revertir si hubo error en backend
+          cargarVentas(true); 
         }
       } catch(e) { 
         showToast('Error: ' + e.message, 'error'); 
@@ -1507,11 +1493,11 @@
 
     function mostrarAlertaNuevaVenta(ventaData, vendedor) {
       const detalle = `
-        <b>Campaña:</b> ${ventaData.campana} (${ventaData.segmento})<br>
-        <b>Cliente:</b> ${ventaData.nombre} ${ventaData.apellido} (DNI: ${ventaData.documento})<br>
-        <b>Producto:</b> ${ventaData.producto}<br>
-        <b>Teléfono:</b> ${ventaData.telTitular}<br>
-        <b>Vendedor:</b> ${vendedor}
+        <b>Campaña:</b> ${escapeHtml(ventaData.campana)} (${escapeHtml(ventaData.segmento)})<br>
+        <b>Cliente:</b> ${escapeHtml(ventaData.nombre)} ${escapeHtml(ventaData.apellido)} (DNI: ${escapeHtml(ventaData.documento)})<br>
+        <b>Producto:</b> ${escapeHtml(ventaData.producto)}<br>
+        <b>Teléfono:</b> ${escapeHtml(ventaData.telTitular)}<br>
+        <b>Vendedor:</b> ${escapeHtml(vendedor)}
       `;
       document.getElementById('alertaVentaDetalles').innerHTML = detalle;
       document.getElementById('modalAlertaVenta').style.display = 'flex';
@@ -1535,7 +1521,6 @@
       cambiarCampañaDinamica();
     }
 
-    // GESTIÓN DE AGENDA Y CALENDARIO INTERACTIVO
     async function cargarAgenda(forzar = false) {
       const ahora = new Date().getTime();
       if (!forzar && agendaGlobal.length > 0 && (ahora - cacheLocal.agendaUltimaCarga < 30000)) {
@@ -1560,7 +1545,7 @@
           if(vistaActualAgenda === 'calendario') renderizarVistaCalendario();
         } else {
           showError(data.error || 'Error al cargar la agenda');
-          if(tbody) tbody.innerHTML = `<tr><td colspan='9' style='text-align:center;padding:20px;color:var(--accent)'>Error: ${data.error || 'Desconocido'}</td></tr>`;
+          if(tbody) tbody.innerHTML = `<tr><td colspan='9' style='text-align:center;padding:20px;color:var(--accent)'>Error: ${escapeHtml(data.error || 'Desconocido')}</td></tr>`;
         }
       } catch(e) {
         showError('Error de red al cargar agenda: ' + e.message);
@@ -1593,7 +1578,7 @@
         if(btnC) { btnC.style.background = 'var(--surface-2)'; btnC.style.color = 'var(--ink)'; }
       } else if(vista === 'calendario') {
         if(t) t.style.display = 'none';
-        if(k) t.style.display = 'none';
+        if(k) k.style.display = 'none'; // BUG FIX APLICADO
         if(c) c.style.display = 'block';
         if(btnC) { btnC.style.background = 'var(--primary)'; btnC.style.color = '#fff'; }
         if(btnT) { btnT.style.background = 'var(--surface-2)'; btnT.style.color = 'var(--ink)'; }
@@ -1649,10 +1634,10 @@
         celda.style.fontWeight = 'bold';
         celda.style.border = '1px solid #ccc';
         celda.style.background = '#fff';
-        celda.style.color = '#000'; // Todos los números en negro
+        celda.style.color = '#000';
 
         if (fechaIsoStr === fechaSeleccionadaCal) {
-          celda.style.background = '#3b82f6'; // Selección azul
+          celda.style.background = '#3b82f6';
           celda.style.color = '#fff';
           celda.style.borderColor = '#1d4ed8';
         }
@@ -1699,11 +1684,11 @@
         return `
           <div style="background: #fff; border: 1px solid #ccc; border-left: 4px solid #3b82f6; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #000;">
             <div>
-              <div style="font-size: 11px; font-weight: bold; color: #1e40af;">⏰ ${horaStr}</div>
-              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">${r[3]} ${r[4]} (DNI: ${r[2]})</div>
-              <div style="font-size: 10px; color: #555;">Tel: ${r[8]} | Dir: ${r[5] || 'Sin dir'} | Estado: <b>${est}</b></div>
+              <div style="font-size: 11px; font-weight: bold; color: #1e40af;">⏰ ${escapeHtml(horaStr)}</div>
+              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">${escapeHtml(r[3])} ${escapeHtml(r[4])} (DNI: ${escapeHtml(r[2])})</div>
+              <div style="font-size: 10px; color: #555;">Tel: ${escapeHtml(r[8])} | Dir: ${escapeHtml(r[5] || 'Sin dir')} | Estado: <b>${escapeHtml(est)}</b></div>
             </div>
-            <button onclick="verDetalleAgendaPorDoc('${r[2]}')" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Ver / Gestionar</button>
+            <button onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')" class="nb-btn nb-btn-sm" style="background:#e1e1e1; color:#000; border:1px solid #ccc;">Ver / Gestionar</button>
           </div>
         `;
       }).join('');
@@ -1729,21 +1714,6 @@
       return null;
     }
 
-    function esLeadEnFrio(fechaAsigStr, estado) {
-      if (estado === 'VENDIDO' || estado === 'DESCARTADO') return false;
-      if (!fechaAsigStr) return false;
-      try {
-        const parts = fechaAsigStr.toString().split(' ');
-        const dateParts = parts[0].split('/');
-        const timeParts = parts[1] ? parts[1].split(':') : [0,0];
-        const d = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1]);
-        const horasTranscurridas = (new Date() - d) / (1000 * 60 * 60);
-        return horasTranscurridas > 48;
-      } catch(e) {
-        return false;
-      }
-    }
-
     function renderAgenda(data) {
       const tbody = document.getElementById('tablaAgenda');
       if(!tbody) return;
@@ -1757,27 +1727,27 @@
         let est = r[10] || 'NUEVO';
         let bClass = est === 'VENDIDO' ? 'nb-badge-green' : (est === 'CONTACTADO' ? 'nb-badge-blue' : (est === 'DESCARTADO' ? 'nb-badge-red' : 'nb-badge-yellow'));
         let fechaRec = r[11] ? String(r[11]).replace('T', ' ') : '-';
-        let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${r[2]}" onclick="actualizarBarraMasiva()">` : `-`;
+        let checkHTML = esAdminTL ? `<input type="checkbox" class="checkAgenda" value="${escapeHtml(r[2])}" onclick="actualizarBarraMasiva()">` : `-`;
 
         let fechaSlaRef = r[13] || r[0];
         let enFrio = esLeadEnFrio(fechaSlaRef, est);
         let rowStyle = enFrio ? 'background: rgba(239, 68, 68, 0.12); border-left: 3px solid var(--accent);' : '';
         let frioBadge = enFrio ? `<br><span style="font-size:9px; color:#ef4444; font-weight:bold;">⚠️ EN FRÍO (>48h sin gestión)</span>` : '';
-        let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Descarte: ${r[12]}</span>` : '';
+        let motivoDesc = r[12] ? `<br><span style="font-size:9px; color:#fca5a5;">Descarte: ${escapeHtml(r[12])}</span>` : '';
 
         let telVal = (r[8] !== undefined && r[8] !== null) ? r[8].toString() : '';
-        let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">🗺️ ${r[6]}</a>` : 'N/A';
+        let gpsVal = r[6] ? `<a href="https://maps.google.com/?q=${escapeHtml(r[6])}" target="_blank" style="color:#60a5fa;">🗺️ ${escapeHtml(r[6])}</a>` : 'N/A';
 
         return `<tr style="${rowStyle}">
           <td data-label="Seleccionar">${checkHTML}</td>
-          <td data-label="Fecha">${r[0] || ''}</td>
-          <td data-label="Recordatorio" style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${fechaRec}</td>
-          <td data-label="Documento">${r[2] || ''}</td>
-          <td data-label="Nombre / Dir"><b>${r[3] || ''} ${r[4] || ''}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${r[5] || 'Sin dir'} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
-          <td data-label="Teléfono">${telVal}</td>
-          <td data-label="Vendedor"><strong>${r[7] || ''}</strong></td>
-          <td data-label="Estado"><span class="nb-badge ${bClass}">${est}</span></td>
-          <td data-label="Acciones"><button onclick="verDetalleAgendaPorDoc('${r[2]}')" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
+          <td data-label="Fecha">${escapeHtml(r[0] || '')}</td>
+          <td data-label="Recordatorio" style="font-weight:bold; color: ${fechaRec !== '-' ? '#3b82f6' : 'inherit'};">${escapeHtml(fechaRec)}</td>
+          <td data-label="Documento">${escapeHtml(r[2] || '')}</td>
+          <td data-label="Nombre / Dir"><b>${escapeHtml(r[3] || '')} ${escapeHtml(r[4] || '')}</b><br><span style="font-size:10px; color:var(--ink-soft);">📍 ${escapeHtml(r[5] || 'Sin dir')} | GPS: ${gpsVal}</span>${frioBadge}${motivoDesc}</td>
+          <td data-label="Teléfono">${escapeHtml(telVal)}</td>
+          <td data-label="Vendedor"><strong>${escapeHtml(r[7] || '')}</strong></td>
+          <td data-label="Estado"><span class="nb-badge ${bClass}">${escapeHtml(est)}</span></td>
+          <td data-label="Acciones"><button onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')" class="nb-btn nb-btn-sm nb-btn-primary">Seguimiento / Vender</button></td>
         </tr>`;
       }).join('');
 
@@ -1799,11 +1769,11 @@
       data.forEach((r) => {
         let est = (r[10] || 'NUEVO').toUpperCase();
         let cardHTML = `
-          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${r[2]}')" onclick="verDetalleAgendaPorDoc('${r[2]}')">
-            <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${r[3]} ${r[4]}</div>
-            <div style="font-size:10px; color:var(--ink-soft);">DNI: ${r[2]} | Tel: ${r[8]}</div>
-            <div style="font-size:10px; margin-top:4px;">📍 ${r[5] || 'Sin dir'}</div>
-            <div style="font-size:9px; margin-top:6px; color:#888;">Asignado: ${r[7]}</div>
+          <div class="kanban-card" draggable="true" ondragstart="dragKanban(event, '${escapeHtml(r[2])}')" onclick="verDetalleAgendaPorDoc('${escapeHtml(r[2])}')">
+            <div style="font-weight:bold; color:var(--primary); margin-bottom:2px;">${escapeHtml(r[3])} ${escapeHtml(r[4])}</div>
+            <div style="font-size:10px; color:var(--ink-soft);">DNI: ${escapeHtml(r[2])} | Tel: ${escapeHtml(r[8])}</div>
+            <div style="font-size:10px; margin-top:4px;">📍 ${escapeHtml(r[5] || 'Sin dir')}</div>
+            <div style="font-size:9px; margin-top:6px; color:#888;">Asignado: ${escapeHtml(r[7])}</div>
           </div>
         `;
 
@@ -1823,28 +1793,28 @@
       }
 
       let esAdminTL = ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol);
-      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${v}" ${v.toLowerCase()===r[7].toLowerCase()?'selected':''}>${v}</option>`).join('');
+      let optionsVend = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}" ${v.toLowerCase()===r[7].toLowerCase()?'selected':''}>${escapeHtml(v)}</option>`).join('');
       let estadoActual = r[10] || 'NUEVO';
       let motivoActual = r[12] || 'NO LE INTERESA';
 
       const html = `
         <div style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 16px; border-radius: 6px; font-size: 12px;">
-          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Contacto: ${r[3]} ${r[4]} (DNI: ${r[2]})</div>
-          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${r[5] || '-'} | <b>GPS:</b> <a href="https://maps.google.com/?q=${r[6]}" target="_blank" style="color:#60a5fa;">${r[6] || 'N/A'}</a></div>
-          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${r[1]} | <b>Teléfono:</b> ${r[8]}</div>
-          <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${r[7]}</div>
+          <div style="font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 10px;">Contacto: ${escapeHtml(r[3])} ${escapeHtml(r[4])} (DNI: ${escapeHtml(r[2])})</div>
+          <div style="margin-bottom: 6px;"><b>Dirección:</b> ${escapeHtml(r[5] || '-')} | <b>GPS:</b> <a href="https://maps.google.com/?q=${escapeHtml(r[6])}" target="_blank" style="color:#60a5fa;">${escapeHtml(r[6] || 'N/A')}</a></div>
+          <div style="margin-bottom: 8px;"><b>Campaña:</b> ${escapeHtml(r[1])} | <b>Teléfono:</b> ${escapeHtml(r[8])}</div>
+          <div style="margin-bottom: 8px;"><b>Vendedor Asignado:</b> ${escapeHtml(r[7])}</div>
 
           ${esAdminTL ? `
             <div style="margin-bottom: 10px; background: #2d2d2d; padding: 8px; border-radius: 4px;">
               <label style="display:block; margin-bottom: 4px; color: var(--ink-soft);">REASIGNAR A OTRO VENDEDOR:</label>
               <select id="agNuevoVendedor" style="width: 100%; padding: 4px; background: #1a1a1a; color: #fff; border: 1px solid #555;">${optionsVend}</select>
-              <button onclick="reasignarContactoLead('${r[2]}')" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
+              <button onclick="reasignarContactoLead('${escapeHtml(r[2])}')" style="margin-top: 6px; padding: 4px 10px; background: var(--primary); border: none; color: white; cursor: pointer; font-weight: bold;">Reasignar Vendedor</button>
             </div>
           ` : ''}
 
           <div style="margin-bottom: 10px;">
             <label style="display:block; margin-bottom: 4px;">📅 FECHA Y HORA DE PRÓXIMO RECORDATORIO:</label>
-            <input type="datetime-local" id="agNuevoRecordatorio" value="${r[11] || ''}" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
+            <input type="datetime-local" id="agNuevoRecordatorio" value="${escapeHtml(r[11] || '')}" style="width: 100%; padding: 6px; background: #2a2a2a; color: #fff; border: 1px solid #555;">
           </div>
 
           <div style="margin-bottom: 10px;">
@@ -1867,7 +1837,7 @@
 
             <div id="containerCoordsObligatorias" style="display: ${ (motivoActual==='SIN COBERTURA' || motivoActual==='SATURADO') ? 'block' : 'none' };">
               <label style="display:block; margin-bottom: 4px; color: #fca5a5; font-weight: bold;">🗺️ COORDENADAS OBLIGATORIAS (Ej: -34.6037, -58.3816) *</label>
-              <input type="text" id="agDescarteCoordsInput" value="${r[6] || ''}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
+              <input type="text" id="agDescarteCoordsInput" value="${escapeHtml(r[6] || '')}" placeholder="Ej: -34.6037, -58.3816" style="width: 100%; padding: 4px; background: #2a2a2a; color: #fff; border: 1px solid var(--accent);">
             </div>
           </div>
 
@@ -1877,12 +1847,12 @@
           </div>
 
           <div style="background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 12px; max-height: 90px; overflow-y: auto; font-family: monospace; font-size: 11px;">
-            <b>Historial de Comentarios:</b><br>${r[9] || 'Sin comentarios'}
+            <b>Historial de Comentarios:</b><br>${escapeHtml(r[9] || 'Sin comentarios')}
           </div>
 
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button onclick="convertirEnVenta('${r[2]}')" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
-            <button onclick="guardarSeguimientoAgenda('${r[2]}')" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
+            <button onclick="convertirEnVenta('${escapeHtml(r[2])}')" class="nb-btn nb-btn-primary" style="background: #10b981; font-weight: bold;">🚀 ¡VENTA! (Convertir a Venta)</button>
+            <button onclick="guardarSeguimientoAgenda('${escapeHtml(r[2])}')" class="nb-btn nb-btn-primary">Guardar Seguimiento</button>
             <button onclick="cerrarModales()" class="nb-btn" style="background: #444;">Cerrar</button>
           </div>
         </div>
@@ -2032,7 +2002,7 @@
 
       if(['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
         if(containerAsignar) containerAsignar.style.display = 'block';
-        if(selectVend) selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${v}">${v}</option>`).join('');
+        if(selectVend) selectVend.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
       } else {
         if(containerAsignar) containerAsignar.style.display = 'none';
       }
@@ -2231,7 +2201,7 @@
               let anchoBarra = Math.min(100, Math.max(2, (cant / totalFibra) * 100));
               htmlVel += `
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; font-size: 11px;">
-                  <span style="width: 80px; font-weight: bold;">${plan}</span>
+                  <span style="width: 80px; font-weight: bold;">${escapeHtml(plan)}</span>
                   <div style="flex: 1; margin: 0 10px; background: #ddd; height: 12px; border-radius: 2px; overflow: hidden;">
                     <div style="background: #1e40af; height: 100%; width: ${anchoBarra}%;"></div>
                   </div>
@@ -2243,24 +2213,51 @@
             contVel.innerHTML = htmlVel;
           }
 
+          // RENDER TABLA VENTAS POR EQUIPO
+          const tbodyEquipo = document.getElementById('tablaReporteEquipo');
+          if(tbodyEquipo) {
+            if(!data.ventasPorEquipo || data.ventasPorEquipo.length === 0) {
+              tbodyEquipo.innerHTML = "<tr><td colspan='10' style='text-align:center;'>Sin datos por equipo</td></tr>";
+            } else {
+              tbodyEquipo.innerHTML = data.ventasPorEquipo.map(eq => `
+                <tr>
+                  <td><strong>${escapeHtml(eq.equipo)}</strong></td>
+                  <td>${eq.totalIngresadas}</td>
+                  <td><b>${eq.cumplidas}</b></td>
+                  <td>${eq.fibra}</td>
+                  <td>${eq.porta}</td>
+                  <td>${eq.movil}</td>
+                  <td style="color: ${eq.canceladas > 0 ? '#ef4444' : 'inherit'};">${eq.canceladas}</td>
+                  <td>${eq.cash}</td>
+                  <td>${eq.clusterC}</td>
+                  <td>${eq.tv}</td>
+                </tr>
+              `).join('');
+            }
+          }
+
+          // RENDER TABLA RANKING / VENTAS POR VENDEDOR
           const tbody = document.getElementById('tablaRanking');
-          if(!tbody) return;
-          if(data.ranking.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>Sin datos para este período</td></tr>";
-          } else {
-            tbody.innerHTML = data.ranking.map(r => `
-              <tr>
-                <td><strong>${r.vendedor}</strong></td>
-                <td><b>${r.cumplidas}</b></td>
-                <td>${r.fibra}</td>
-                <td>${r.porta}</td>
-                <td>${r.movil}</td>
-                <td style="color: ${r.canceladas > 0 ? '#ef4444' : 'inherit'};">${r.canceladas}</td>
-                <td>${r.cash}</td>
-                <td>${r.clusterC}</td>
-                <td>${r.tv}</td>
-              </tr>
-            `).join('');
+          if(tbody) {
+            if(!data.ranking || data.ranking.length === 0) {
+              tbody.innerHTML = "<tr><td colspan='11' style='text-align:center;'>Sin datos para este período</td></tr>";
+            } else {
+              tbody.innerHTML = data.ranking.map(r => `
+                <tr>
+                  <td><strong>${escapeHtml(r.vendedor)}</strong></td>
+                  <td><span class="nb-badge nb-badge-blue">${escapeHtml(r.equipo)}</span></td>
+                  <td>${r.totalIngresadas}</td>
+                  <td><b>${r.cumplidas}</b></td>
+                  <td>${r.fibra}</td>
+                  <td>${r.porta}</td>
+                  <td>${r.movil}</td>
+                  <td style="color: ${r.canceladas > 0 ? '#ef4444' : 'inherit'};">${r.canceladas}</td>
+                  <td>${r.cash}</td>
+                  <td>${r.clusterC}</td>
+                  <td>${r.tv}</td>
+                </tr>
+              `).join('');
+            }
           }
         }
       } catch(err) { showToast(err.message, 'error'); }
@@ -2275,18 +2272,18 @@
           teamLeadersGlobal = data.teamLeaders || [];
           const selectTL = document.getElementById('uLeader');
           if(selectTL) {
-            selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${tl}">${tl}</option>`).join('');
+            selectTL.innerHTML = '<option value="">-- Sin Team Leader --</option>' + teamLeadersGlobal.map(tl => `<option value="${escapeHtml(tl)}">${escapeHtml(tl)}</option>`).join('');
           }
 
           tbody.innerHTML = data.rows.map(r => `
             <tr>
-              <td><strong>${r[0]}</strong></td>
-              <td>${r[1]}</td>
-              <td>${r[2]}</td>
-              <td>${r[3] || '-'}</td>
-              <td>${r[4]}</td>
-              <td>${r[5]}</td>
-              <td><button onclick="editarUser('${r[0]}','${r[1]}','${r[2]}','${r[3]}','${r[4]}','${r[5]}')" class="nb-btn nb-btn-sm">Editar</button></td>
+              <td><strong>${escapeHtml(r[0])}</strong></td>
+              <td>${escapeHtml(r[1])}</td>
+              <td>${escapeHtml(r[2])}</td>
+              <td>${escapeHtml(r[3] || '-')}</td>
+              <td>${escapeHtml(r[4])}</td>
+              <td>${escapeHtml(r[5])}</td>
+              <td><button onclick="editarUser('${escapeHtml(r[0])}','${escapeHtml(r[1])}','${escapeHtml(r[2])}','${escapeHtml(r[3])}','${escapeHtml(r[4])}','${escapeHtml(r[5])}')" class="nb-btn nb-btn-sm">Editar</button></td>
             </tr>
           `).join('');
         }
