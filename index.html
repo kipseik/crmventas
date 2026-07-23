@@ -825,7 +825,6 @@
       }, 300);
     }
 
-    // BRIDGE NATIVO GOOGLE.SCRIPT.RUN (MÁXIMA SEGURIDAD Y VELOCIDAD PARA APPS SCRIPT)
     function apiFetch(payload) {
       return new Promise((resolve, reject) => {
         google.script.run
@@ -979,7 +978,6 @@
       }
     }
 
-    // BUG FIX SEGURIDAD HTML: Uso de dataset indices para evitar roturas por comillas en nombres
     async function cargarTablaConfigCampanas() {
       try {
         const data = await apiFetch({ action: 'getConfigCampanas' });
@@ -1196,7 +1194,6 @@
       verificarDuplicadoDNI();
     }
 
-    // EXPORTACIÓN A EXCEL SEGURA MEDIANTE BLOB (COMPATIBLE CON MÓVILES Y TILDES)
     function descargarExcel(tipo) {
       if (todasLasVentas.length === 0) { showToast('No hay ventas para exportar', 'error'); return; }
       let datos = tipo === 'mias'
@@ -1427,7 +1424,6 @@
         return;
       }
 
-      // SEGURIDAD & PERFORMANCE: Validación estricta de tamaño de archivo (Máx 8MB)
       const rawFiles = [
         document.getElementById('vArchivo1').files[0],
         document.getElementById('vArchivo2').files[0],
@@ -1540,23 +1536,6 @@
       cambiarCampañaDinamica();
     }
 
-    // FUNCIONES AUXILIARES FALTANTES DE AGENDA
-    function esLeadEnFrio(fechaRef, estado) {
-      if (!fechaRef) return false;
-      estado = (estado || '').toUpperCase();
-      if (estado === 'VENDIDO' || estado === 'DESCARTADO') return false;
-      try {
-        let refDate = new Date(fechaRef);
-        if (isNaN(refDate)) {
-          let partes = fechaRef.toString().split(' ')[0].split('/');
-          if(partes.length === 3) refDate = new Date(partes[2], partes[1]-1, partes[0]);
-        }
-        if (isNaN(refDate)) return false;
-        let diffHoras = (new Date() - refDate) / (1000 * 60 * 60);
-        return diffHoras > 48;
-      } catch(e) { return false; }
-    }
-
     async function cargarAgenda(forzar = false) {
       const ahora = new Date().getTime();
       if (!forzar && agendaGlobal.length > 0 && (ahora - cacheLocal.agendaUltimaCarga < 30000)) {
@@ -1614,7 +1593,7 @@
         if(btnC) { btnC.style.background = 'var(--surface-2)'; btnC.style.color = 'var(--ink)'; }
       } else if(vista === 'calendario') {
         if(t) t.style.display = 'none';
-        if(k) k.style.display = 'none'; // BUG FIX: Oculta Kanban correctamente
+        if(k) k.style.display = 'none';
         if(c) c.style.display = 'block';
         if(btnC) { btnC.style.background = 'var(--primary)'; btnC.style.color = '#fff'; }
         if(btnT) { btnT.style.background = 'var(--surface-2)'; btnT.style.color = 'var(--ink)'; }
