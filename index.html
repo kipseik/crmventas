@@ -742,8 +742,6 @@
   </div>
 
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPYu9Ps5D44xFlPItb7ko89zW77tm962JAbotWKfjW3MJUwqHhoBJzLvaQGvUq_wBO/exec';
-
     const ESTADOS_VENTA = {
       PENDIENTE: 'PENDIENTE',
       CUMPLIDA: 'CUMPLIDA',
@@ -827,31 +825,14 @@
       }, 300);
     }
 
-    async function apiFetch(payload, timeoutMs = 15000) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch (jsonErr) {
-          console.error("Respuesta del servidor no válida:", text);
-          throw new Error("El servidor devolvió una respuesta no válida. Verificá los permisos del Web App.");
-        }
-      } catch (e) {
-        clearTimeout(timeoutId);
-        if (e.name === 'AbortError') {
-          throw new Error('La solicitud tardó demasiado y fue cancelada.');
-        }
-        throw e;
-      }
+    // BRIDGE NATIVO GOOGLE.SCRIPT.RUN (MÁXIMA SEGURIDAD Y VELOCIDAD PARA APPS SCRIPT)
+    function apiFetch(payload) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .doPostWrapper(payload);
+      });
     }
 
     async function hacerLogin() {
@@ -998,6 +979,7 @@
       }
     }
 
+    // BUG FIX SEGURIDAD HTML: Uso de dataset indices para evitar roturas por comillas en nombres
     async function cargarTablaConfigCampanas() {
       try {
         const data = await apiFetch({ action: 'getConfigCampanas' });
@@ -1005,16 +987,22 @@
         if(!tbody) return;
         if(data.success) {
           let rowsHTML = '';
-          data.rawRows.forEach(r => {
+          data.rawRows.forEach((r, idx) => {
             let companiaVal = r[2] || '-';
             rowsHTML += `<tr>
               <td><strong>${escapeHtml(r[0])}</strong></td>
               <td>${escapeHtml(r[1])}</td>
               <td><span class="nb-badge nb-badge-blue">${escapeHtml(companiaVal)}</span></td>
-              <td><button onclick="eliminarCampanaProducto('${escapeHtml(r[0])}', '${escapeHtml(r[1])}', '${escapeHtml(companiaVal)}')" class="nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
+              <td><button data-idx="${idx}" class="btn-del-camp nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
             </tr>`;
           });
           tbody.innerHTML = rowsHTML || "<tr><td colspan='4' style='text-align:center;'>Sin campañas configuradas</td></tr>";
+          tbody.querySelectorAll('.btn-del-camp').forEach(btn => {
+            btn.onclick = () => {
+              const row = data.rawRows[parseInt(btn.dataset.idx)];
+              eliminarCampanaProducto(row[0], row[1], row[2]);
+            };
+          });
         }
       } catch(e) {}
     }
@@ -1206,6 +1194,28 @@
         showToast('¡Datos autocompletados!', 'info');
       } else { document.getElementById('vDoc').value = dni; }
       verificarDuplicadoDNI();
+    }
+
+    // EXPORTACIÓN A EXCEL SEGURA MEDIANTE BLOB (COMPATIBLE CON MÓVILES Y TILDES)
+    function descargarExcel(tipo) {
+      if (todasLasVentas.length === 0) { showToast('No hay ventas para exportar', 'error'); return; }
+      let datos = tipo === 'mias'
+        ? todasLasVentas.filter(r => safeLower(r[6]) === safeLower(usuarioActual.nombre) || safeLower(r[6]) === safeLower(usuarioActual.email))
+        : todasLasVentas;
+      let csv = "Fecha,Campaña,Doc,Nombre,Vendedor,Producto,Estado,NroOrden\r\n";
+      datos.forEach(r => {
+        csv += `"${r[0]||''}","${r[1]||''}","${r[3]||''}","${r[4]||''} ${r[5]||''}","${r[6]||''}","${r[7]||''}","${r[8]||''}","${r[22]||''}"\r\n`;
+      });
+      let blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      let a = document.createElement('a'); 
+      a.href = URL.createObjectURL(blob); 
+      a.download = `ventas_${tipo}_${new Date().toISOString().slice(0,10)}.csv`; 
+      a.click();
+    }
+
+    function descargarExcelRanking() {
+      showToast('Generando reporte general...', 'info');
+      descargarExcel('grupo');
     }
 
     function verDetalleVentaPorDoc(doc) {
@@ -1417,6 +1427,21 @@
         return;
       }
 
+      // SEGURIDAD & PERFORMANCE: Validación estricta de tamaño de archivo (Máx 8MB)
+      const rawFiles = [
+        document.getElementById('vArchivo1').files[0],
+        document.getElementById('vArchivo2').files[0],
+        document.getElementById('vArchivo3').files[0]
+      ].filter(Boolean);
+
+      const MAX_MB = 8;
+      for (let f of rawFiles) {
+        if (f.size > MAX_MB * 1024 * 1024) {
+          showToast(`El archivo ${f.name} supera el límite de ${MAX_MB}MB`, 'error');
+          return;
+        }
+      }
+
       if(btn) { btn.innerText = "Guardando..."; btn.disabled = true; }
       const metodo = document.getElementById('vMetodoPago').value;
       const datosTarjetaVal = metodo === 'TARJETA' ? document.getElementById('vDatosTarjeta').value : 'EFECTIVO';
@@ -1444,12 +1469,6 @@
         datosTarjeta: datosTarjetaVal,
         origenAgendaDoc: leadConvertiendoDoc
       };
-
-      const rawFiles = [
-        document.getElementById('vArchivo1').files[0],
-        document.getElementById('vArchivo2').files[0],
-        document.getElementById('vArchivo3').files[0]
-      ].filter(Boolean);
 
       const enviar = async (datos) => {
         try {
@@ -1521,6 +1540,23 @@
       cambiarCampañaDinamica();
     }
 
+    // FUNCIONES AUXILIARES FALTANTES DE AGENDA
+    function esLeadEnFrio(fechaRef, estado) {
+      if (!fechaRef) return false;
+      estado = (estado || '').toUpperCase();
+      if (estado === 'VENDIDO' || estado === 'DESCARTADO') return false;
+      try {
+        let refDate = new Date(fechaRef);
+        if (isNaN(refDate)) {
+          let partes = fechaRef.toString().split(' ')[0].split('/');
+          if(partes.length === 3) refDate = new Date(partes[2], partes[1]-1, partes[0]);
+        }
+        if (isNaN(refDate)) return false;
+        let diffHoras = (new Date() - refDate) / (1000 * 60 * 60);
+        return diffHoras > 48;
+      } catch(e) { return false; }
+    }
+
     async function cargarAgenda(forzar = false) {
       const ahora = new Date().getTime();
       if (!forzar && agendaGlobal.length > 0 && (ahora - cacheLocal.agendaUltimaCarga < 30000)) {
@@ -1578,7 +1614,7 @@
         if(btnC) { btnC.style.background = 'var(--surface-2)'; btnC.style.color = 'var(--ink)'; }
       } else if(vista === 'calendario') {
         if(t) t.style.display = 'none';
-        if(k) k.style.display = 'none'; // BUG FIX APLICADO
+        if(k) k.style.display = 'none'; // BUG FIX: Oculta Kanban correctamente
         if(c) c.style.display = 'block';
         if(btnC) { btnC.style.background = 'var(--primary)'; btnC.style.color = '#fff'; }
         if(btnT) { btnT.style.background = 'var(--surface-2)'; btnT.style.color = 'var(--ink)'; }
@@ -2213,7 +2249,6 @@
             contVel.innerHTML = htmlVel;
           }
 
-          // RENDER TABLA VENTAS POR EQUIPO
           const tbodyEquipo = document.getElementById('tablaReporteEquipo');
           if(tbodyEquipo) {
             if(!data.ventasPorEquipo || data.ventasPorEquipo.length === 0) {
@@ -2236,7 +2271,6 @@
             }
           }
 
-          // RENDER TABLA RANKING / VENTAS POR VENDEDOR
           const tbody = document.getElementById('tablaRanking');
           if(tbody) {
             if(!data.ranking || data.ranking.length === 0) {
