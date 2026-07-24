@@ -952,22 +952,22 @@
 
       const filtroCamp = document.getElementById('filtroCamp');
       if(filtroCamp) {
-        filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+        filtroCamp.innerHTML = '<option value="">Todas</option>' + campanas.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
       }
 
       const vCamp = document.getElementById('vCampaña');
       if(vCamp) {
-        vCamp.innerHTML = '<option>-- Seleccionar --</option>' + campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+        vCamp.innerHTML = '<option>-- Seleccionar --</option>' + campanas.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
       }
 
       const agCamp = document.getElementById('agCamp');
       if(agCamp) {
-        agCamp.innerHTML = campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+        agCamp.innerHTML = campanas.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
       }
 
       const loteCamp = document.getElementById('loteCamp');
       if(loteCamp) {
-        loteCamp.innerHTML = campanas.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+        loteCamp.innerHTML = campanas.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
       }
     }
 
@@ -978,7 +978,7 @@
 
       if(configuracionCampanasGlobal[campaña]?.length) {
         configuracionCampanasGlobal[campaña].forEach(p => {
-          selectProd.innerHTML += `<option>${escapeHtml(p)}</option>`;
+          selectProd.innerHTML += '<option>' + escapeHtml(p) + '</option>';
         });
       }
     }
@@ -992,12 +992,12 @@
           let rowsHTML = '';
           data.rawRows.forEach((r, idx) => {
             let companiaVal = r[2] || '-';
-            rowsHTML += `<tr>
-              <td><strong>${escapeHtml(r[0])}</strong></td>
-              <td>${escapeHtml(r[1])}</td>
-              <td><span class="nb-badge nb-badge-blue">${escapeHtml(companiaVal)}</span></td>
-              <td><button data-idx="${idx}" class="btn-del-camp nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>
-            </tr>`;
+            rowsHTML += '<tr>' +
+              '<td><strong>' + escapeHtml(r[0]) + '</strong></td>' +
+              '<td>' + escapeHtml(r[1]) + '</td>' +
+              '<td><span class="nb-badge nb-badge-blue">' + escapeHtml(companiaVal) + '</span></td>' +
+              '<td><button data-idx="' + idx + '" class="btn-del-camp nb-btn nb-btn-sm" style="background:var(--accent);">Eliminar</button></td>' +
+            '</tr>';
           });
           tbody.innerHTML = rowsHTML || "<tr><td colspan='4' style='text-align:center;'>Sin campañas configuradas</td></tr>";
           tbody.querySelectorAll('.btn-del-camp').forEach(btn => {
@@ -1030,7 +1030,7 @@
     }
 
     async function eliminarCampanaProducto(camp, prod, compania) {
-      if(!confirm(`¿Eliminar producto "${prod}" de la campaña "${camp}" (${compania})?`)) return;
+      if(!confirm('¿Eliminar producto "' + prod + '" de la campaña "' + camp + '" (' + compania + ')?')) return;
       try {
         const data = await apiFetch({ action: 'eliminarConfigCampana', campana: camp, producto: prod, compania: compania, adminEmail: usuarioActual.email });
         if(data.success) {
@@ -1070,11 +1070,11 @@
 
           const loteSel = document.getElementById('loteNuevoVendedor');
           if(loteSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
-            loteSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            loteSel.innerHTML = todosLosVendedoresGlobal.map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
           }
           const loteImportSel = document.getElementById('loteDestinoVendedor');
           if(loteImportSel && ['Subagente Admin', 'Team Leader'].includes(usuarioActual.rol)) {
-            loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+            loteImportSel.innerHTML = todosLosVendedoresGlobal.map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
           }
         }
       } catch(e) {}
@@ -1115,7 +1115,7 @@
       let porcentajeMeta = Math.min(100, (total / metaDiaria) * 100);
       const barra = document.getElementById('barraProgresoMeta');
       if(barra) barra.style.width = porcentajeMeta + '%';
-      setText('metaTextoProgreso', `Meta diaria: ${total} / ${metaDiaria} ventas`);
+      setText('metaTextoProgreso', 'Meta diaria: ' + total + ' / ' + metaDiaria + ' ventas');
     }
 
     function verificarDuplicadoDNI() {
@@ -1125,7 +1125,7 @@
       const duplicado = todasLasVentas.find(r => r[3].toString().trim() === dni);
       if(duplicado && alerta) {
         alerta.style.display = 'block';
-        alerta.textContent = `⚠️ ¡Atención! El DNI ${dni} ya está registrado por ${duplicado[6]} (${duplicado[8] || ESTADOS_VENTA.PENDIENTE}).`;
+        alerta.textContent = '⚠️ ¡Atención! El DNI ' + dni + ' ya está registrado por ' + duplicado[6] + ' (' + (duplicado[8] || ESTADOS_VENTA.PENDIENTE) + ').';
       } else if(alerta) { alerta.style.display = 'none'; }
     }
 
@@ -1145,7 +1145,7 @@
       });
 
       renderVentas(filtradas);
-      setText('contadorVentas', `${filtradas.length} ventas encontradas`);
+      setText('contadorVentas', filtradas.length + ' ventas encontradas');
     }
 
     function renderVentas(data) {
@@ -1155,28 +1155,30 @@
         tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;padding:40px;color:var(--ink-soft)'>Sin ventas registradas</td></tr>";
         return;
       }
-      tbody.innerHTML = data.map((r) => {
+      let rowsHTML = '';
+      data.forEach((r) => {
         let est = r[8] || ESTADOS_VENTA.PENDIENTE;
         let bClass = "nb-badge-blue";
         if(est === ESTADOS_VENTA.CUMPLIDA) bClass = "nb-badge-green";
         else if(est.includes(ESTADOS_VENTA.CANCELADA) || est.includes(ESTADOS_VENTA.RECUPERAR)) bClass = "nb-badge-red";
         else if(est === ESTADOS_VENTA.PENDIENTE) bClass = "nb-badge-yellow";
 
-        let adjHTML = (r[11] && r[11].toString().includes("http")) ? `<a href="${escapeHtml(r[11])}" target="_blank" style="color:#3b82f6;">Ver</a>` : "-";
+        let adjHTML = (r[11] && r[11].toString().includes("http")) ? '<a href="' + escapeHtml(r[11]) + '" target="_blank" style="color:#3b82f6;">Ver</a>' : "-";
         let nroOrdenVal = r[22] || '-';
 
-        return `<tr class="fila-venta" data-doc="${escapeHtml(r[3])}" style="cursor:pointer;">
-          <td data-label="Fecha">${escapeHtml(r[0] || '')}</td>
-          <td data-label="Campaña">${escapeHtml(r[1] || '')} (${escapeHtml(r[2] || 'Individuos'})</td>
-          <td data-label="Nro Orden"><strong>${escapeHtml(nroOrdenVal)}</strong></td>
-          <td data-label="Documento">${escapeHtml(r[3] || '')}</td>
-          <td data-label="Nombre">${escapeHtml(r[4] || '')} ${escapeHtml(r[5] || '')}</td>
-          <td data-label="Vendedor">${escapeHtml(r[6] || '')}</td>
-          <td data-label="Producto">${escapeHtml(r[7] || '')}</td>
-          <td data-label="Estado"><span class="nb-badge ${bClass}">${escapeHtml(est)}</span></td>
-          <td data-label="Adjuntos">${adjHTML}</td>
-        </tr>`;
-      }).join('');
+        rowsHTML += '<tr class="fila-venta" data-doc="' + escapeHtml(r[3]) + '" style="cursor:pointer;">' +
+          '<td data-label="Fecha">' + escapeHtml(r[0] || '') + '</td>' +
+          '<td data-label="Campaña">' + escapeHtml(r[1] || '') + ' (' + escapeHtml(r[2] || 'Individuos') + ')</td>' +
+          '<td data-label="Nro Orden"><strong>' + escapeHtml(nroOrdenVal) + '</strong></td>' +
+          '<td data-label="Documento">' + escapeHtml(r[3] || '') + '</td>' +
+          '<td data-label="Nombre">' + escapeHtml(r[4] || '') + ' ' + escapeHtml(r[5] || '') + '</td>' +
+          '<td data-label="Vendedor">' + escapeHtml(r[6] || '') + '</td>' +
+          '<td data-label="Producto">' + escapeHtml(r[7] || '') + '</td>' +
+          '<td data-label="Estado"><span class="nb-badge ' + bClass + '">' + escapeHtml(est) + '</span></td>' +
+          '<td data-label="Adjuntos">' + adjHTML + '</td>' +
+        '</tr>';
+      });
+      tbody.innerHTML = rowsHTML;
 
       tbody.querySelectorAll('.fila-venta').forEach(tr => {
         tr.onclick = () => verDetalleVentaPorDoc(tr.dataset.doc);
@@ -1210,12 +1212,12 @@
         : todasLasVentas;
       let csv = "Fecha,Campaña,Doc,Nombre,Vendedor,Producto,Estado,NroOrden\r\n";
       datos.forEach(r => {
-        csv += `"${r[0]||''}","${r[1]||''}","${r[3]||''}","${r[4]||''} ${r[5]||''}","${r[6]||''}","${r[7]||''}","${r[8]||''}","${r[22]||''}"\r\n`;
+        csv += '"' + (r[0]||'') + '","' + (r[1]||'') + '","' + (r[3]||'') + '","' + (r[4]||'') + ' ' + (r[5]||'') + '","' + (r[6]||'') + '","' + (r[7]||'') + '","' + (r[8]||'') + '","' + (r[22]||'') + '"\r\n';
       });
       let blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
       let a = document.createElement('a'); 
       a.href = URL.createObjectURL(blob); 
-      a.download = `ventas_${tipo}_${new Date().toISOString().slice(0,10)}.csv`; 
+      a.download = 'ventas_' + tipo + '_' + new Date().toISOString().slice(0,10) + '.csv'; 
       a.click();
     }
 
@@ -1742,26 +1744,6 @@
       contenedorHorarios.querySelectorAll('.btn-cal-agenda').forEach(btn => {
         btn.onclick = () => verDetalleAgendaPorDoc(btn.dataset.doc);
       });
-    }
-
-    function parseFechaVenta(fechaStr) {
-      if (!fechaStr) return null;
-      try {
-        let partes = fechaStr.toString().split(' ')[0].split('/');
-        if (partes.length === 3) {
-          let d = parseInt(partes[0]), m = parseInt(partes[1]) - 1, y = parseInt(partes[2]);
-          let date = new Date(y, m, d);
-          if (date.getDate() === d && date.getMonth() === m && date.getFullYear() === y) {
-            return `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
-          }
-        } else {
-          let dt = new Date(fechaStr);
-          if (!isNaN(dt)) {
-            return dt.toISOString().slice(0, 10);
-          }
-        }
-      } catch(e) {}
-      return null;
     }
 
     function renderAgenda(data) {
